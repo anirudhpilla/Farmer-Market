@@ -1,0 +1,185 @@
+from math import ceil
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
+
+from app.api.auth import get_current_admin
+from app.database import get_db_session
+from app.models import Category, Product, ProductStatus, User
+from app.schemas import (
+    AdminProductPage,
+    AdminProductRead,
+    ProductCreate,
+    ProductStatusUpdate,
+    ProductStockUpdate,
+    ProductUpdate,
+)
+
+router = APIRouter(prefix="/admin/products", tags=["admin products"])
+DatabaseSession = Annotated[AsyncSession, Depends(get_db_session)]
+CurrentAdmin = Annotated[User, Depends(get_current_admin)]
+
+
+async def find_product(
+    session: AsyncSession,
+    product_id: int,
+    *,
+    lock: bool = False,
+) -> Product:
+    query = (
+        select(Product)
+        .options(joinedload(Product.category))
+        .where(Product.id == product_id, Product.is_deleted.is_(False))
+    )
+    if lock:
+        query = query.with_for_update(of=Product)
+
+    product = await session.scalar(query)
+    if product is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+    return product
+
+
+async def find_category(session: AsyncSession, category_id: int) -> Category:
+    category = await session.get(Category, category_id)
+    if category is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Category does not exist",
+        )
+    return category
+
+
+@router.get("", response_model=AdminProductPage)
+async def list_admin_products(
+    session: DatabaseSession,
+    _admin: CurrentAdmin,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=50)] = 20,
+) -> AdminProductPage:
+    visible = Product.is_deleted.is_(False)
+    total = await session.scalar(select(func.count()).select_from(Product).where(visible))
+    total = total or 0
+
+    query = (
+        select(Product)
+        .options(joinedload(Product.category))
+        .where(visible)
+        .order_by(Product.name, Product.id)
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    products = list(await session.scalars(query))
+    return AdminProductPage(
+        items=products,
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=ceil(total / page_size),
+    )
+
+
+@router.get("/{product_id}", response_model=AdminProductRead)
+async def get_admin_product(
+    product_id: int,
+    session: DatabaseSession,
+    _admin: CurrentAdmin,
+) -> Product:
+    return await find_product(session, product_id)
+
+
+@router.post("", response_model=AdminProductRead, status_code=status.HTTP_201_CREATED)
+async def create_product(
+    body: ProductCreate,
+    session: DatabaseSession,
+    _admin: CurrentAdmin,
+) -> Product:
+    category = await find_category(session, body.category_id)
+    product = Product(
+        name=body.name,
+        category_id=category.id,
+        farmer_name=body.farmer_name,
+        description=body.description,
+        price=body.price,
+        available_quantity=body.available_quantity,
+        image_url=str(body.image_url),
+        status=ProductStatus(body.status),
+        category=category,
+    )
+    session.add(product)
+    await session.commit()
+    return product
+
+
+@router.patch("/{product_id}", response_model=AdminProductRead)
+async def update_product(
+    product_id: int,
+    body: ProductUpdate,
+    session: DatabaseSession,
+    _admin: CurrentAdmin,
+) -> Product:
+    product = await find_product(session, product_id)
+    changes = body.model_dump(exclude_unset=True)
+
+    if "category_id" in changes:
+        category = await find_category(session, changes["category_id"])
+        product.category = category
+
+    if "image_url" in changes:
+        changes["image_url"] = str(changes["image_url"])
+
+    for field, value in changes.items():
+        setattr(product, field, value)
+
+    product.version += 1
+    await session.commit()
+    return product
+
+
+@router.patch("/{product_id}/status", response_model=AdminProductRead)
+async def update_product_status(
+    product_id: int,
+    body: ProductStatusUpdate,
+    session: DatabaseSession,
+    _admin: CurrentAdmin,
+) -> Product:
+    product = await find_product(session, product_id)
+    product.status = ProductStatus(body.status)
+    product.version += 1
+    await session.commit()
+    return product
+
+
+@router.patch("/{product_id}/stock", response_model=AdminProductRead)
+async def update_product_stock(
+    product_id: int,
+    body: ProductStockUpdate,
+    session: DatabaseSession,
+    _admin: CurrentAdmin,
+) -> Product:
+    product = await find_product(session, product_id, lock=True)
+    if product.version != body.expected_version:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Product changed; reload it before updating stock",
+        )
+
+    product.available_quantity = body.available_quantity
+    product.version += 1
+    await session.commit()
+    return product
+
+
+@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_product(
+    product_id: int,
+    session: DatabaseSession,
+    _admin: CurrentAdmin,
+) -> None:
+    product = await find_product(session, product_id, lock=True)
+    product.is_deleted = True
+    product.version += 1
+    await session.commit()

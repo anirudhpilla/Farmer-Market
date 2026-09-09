@@ -10,6 +10,14 @@ class Settings(BaseSettings):
     api_v1_prefix: str = "/api/v1"
     database_url: str = "postgresql+asyncpg://farmer_app:farmer_app@localhost:5432/farmer_market"
     frontend_origin: str = "http://localhost:5173"
+    jwt_secret: str = "development-only-secret-change-me"
+    jwt_issuer: str = "farmer-market-api"
+    jwt_audience: str = "farmer-market-admin"
+    access_token_minutes: int = 15
+    refresh_session_days: int = 7
+    cookie_secure: bool = False
+    admin_email: str | None = None
+    admin_password: str | None = None
 
 
 @lru_cache

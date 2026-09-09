@@ -312,6 +312,233 @@ a:focus-visible {
   text-decoration: none;
 }
 
+.auth-card,
+.admin-page {
+  width: min(100%, 480px);
+  margin-inline: auto;
+  padding: 1.5rem;
+  border: 1px solid #d7ded3;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.auth-card h1,
+.admin-page h1 {
+  font-size: clamp(2rem, 7vw, 3rem);
+}
+
+.auth-card form,
+.auth-card label {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.auth-card form {
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.auth-card input {
+  min-height: 44px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #bcc8bb;
+  border-radius: 6px;
+  font: inherit;
+}
+
+.auth-card button,
+.admin-page button {
+  min-height: 44px;
+  padding: 0.7rem 1rem;
+  border: 0;
+  border-radius: 6px;
+  color: #fff;
+  background: #27633c;
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth-card button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.form-error {
+  margin: 0;
+  color: #8a3f29;
+}
+
+.admin-products h1,
+.product-form-page h1 {
+  font-size: clamp(2rem, 7vw, 3.5rem);
+}
+
+.admin-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.admin-heading__actions,
+.row-actions,
+.stock-editor,
+.product-form__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.admin-heading__actions .button-link {
+  margin: 0;
+}
+
+.admin-heading button,
+.admin-table button,
+.product-form button {
+  min-height: 38px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid #aebcad;
+  border-radius: 6px;
+  color: #24442e;
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.admin-table button:disabled,
+.product-form button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #d7ded3;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.admin-table {
+  width: 100%;
+  min-width: 850px;
+  border-collapse: collapse;
+}
+
+.admin-table th,
+.admin-table td {
+  padding: 0.85rem;
+  border-bottom: 1px solid #e4e8e1;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.admin-table th {
+  color: #536057;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.admin-table small {
+  display: block;
+  margin-top: 0.25rem;
+  color: #68736b;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.3rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  text-transform: capitalize;
+}
+
+.status-badge--active {
+  color: #245b35;
+  background: #dceede;
+}
+
+.status-badge--inactive {
+  color: #665d36;
+  background: #f3edcf;
+}
+
+.stock-editor input {
+  width: 78px;
+  min-height: 38px;
+  padding: 0.4rem;
+  border: 1px solid #bcc8bb;
+  border-radius: 6px;
+}
+
+.row-actions a {
+  color: #27633c;
+}
+
+.admin-table .danger-button {
+  color: #8a3f29;
+  border-color: #d8b3a8;
+}
+
+.product-form-page {
+  max-width: 800px;
+  margin-inline: auto;
+}
+
+.product-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  border: 1px solid #d7ded3;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.product-form label {
+  display: grid;
+  align-content: start;
+  gap: 0.4rem;
+  font-weight: 650;
+}
+
+.product-form input,
+.product-form select,
+.product-form textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #bcc8bb;
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+}
+
+.product-form textarea {
+  min-height: 130px;
+  resize: vertical;
+}
+
+.product-form small {
+  color: #68736b;
+  font-weight: 400;
+}
+
+.product-form__wide {
+  grid-column: 1 / -1;
+}
+
+.product-form__actions {
+  justify-content: flex-end;
+}
+
+.product-form__actions button {
+  color: #fff;
+  border-color: #27633c;
+  background: #27633c;
+}
+
 .site-footer {
   padding-block: 1.5rem;
   color: #667069;
@@ -362,5 +589,21 @@ a:focus-visible {
 @media (max-width: 600px) {
   .product-grid {
     grid-template-columns: 1fr;
+  }
+
+  .admin-heading,
+  .admin-heading__actions,
+  .product-form__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .product-form {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+  }
+
+  .product-form__wide {
+    grid-column: auto;
   }
 }

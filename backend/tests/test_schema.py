@@ -5,7 +5,13 @@ from app.database import Base
 
 
 def test_core_tables_are_registered() -> None:
-    expected_tables = {"categories", "products"}
+    expected_tables = {
+        "categories",
+        "products",
+        "refresh_sessions",
+        "refresh_tokens",
+        "users",
+    }
 
     assert expected_tables == set(Base.metadata.tables)
 

@@ -1,6 +1,6 @@
 # Farmer Products Shopping Cart — Final Project Outline
 
-Status: finalized planning baseline; public catalog implementation is in progress.
+Status: finalized planning baseline; public catalog, admin authentication, and admin product management are implemented.
 
 Based on the supplied **Fast API Assessment -(1).pdf**, the original project outline, and the agreed review corrections. Refresh-token rotation is included in the implementation scope. Future enhancements are explicitly separated from delivery commitments.
 
@@ -90,6 +90,7 @@ Async is an I/O-concurrency choice, not a guarantee of faster queries or thread 
 - Production cookies use Secure, HttpOnly, a suitable SameSite setting, and a constrained path. Refresh cookies use the authentication path; guest identity cookies use the cart/order paths or a shared API prefix as needed.
 - Prefer same-site frontend/API deployment. Document separate development origins and cookie settings explicitly.
 - Protect cookie-authenticated state changes with an allowed-Origin check and a session-bound CSRF token sent in a custom header. SameSite is defense in depth; CORS is not authorization or a complete CSRF defense. Protect login/session bootstrap against cross-origin abuse as well. See [OWASP CSRF guidance](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html).
+- The implemented double-submit value is a readable CSRF cookie whose digest is bound to the refresh family in PostgreSQL. The frontend copies it into `X-CSRF-Token`; the opaque refresh cookie remains HttpOnly.
 - Return tokens only through the intended channel; never log passwords, tokens, cookies, or authorization headers.
 
 ### Frontend lifecycle and failure behavior
@@ -97,7 +98,7 @@ Async is an I/O-concurrency choice, not a guarantee of faster queries or thread 
 - On page reload, attempt one refresh to restore the admin session before deciding whether a protected route should redirect.
 - On an eligible access-token expiry response, allow one in-flight refresh per browser tab; queue other failed requests behind it, then retry each request at most once.
 - Never recursively refresh a failed refresh request. Network failures and permission-denied responses must not trigger unlimited refresh loops.
-- Coordinate refresh across supported browser tabs through a cross-tab lock; notify tabs about logout/session changes. Strict reuse detection can force re-login if competing refresh requests escape coordination.
+- The implemented frontend coalesces refreshes within one tab and retries an eligible request once. Cross-tab coordination is a conditional enhancement in section 14 because strict reuse detection can force re-login if two tabs rotate the same cookie concurrently.
 - A lost refresh response can also require re-login because the old token is already consumed. Document this bounded trade-off rather than silently accepting token replay.
 - Logout revokes the current refresh family, clears the cookie and in-memory access token, and updates the UI. Already-issued stateless access tokens remain valid until their short expiry; immediate access-token revocation is not claimed.
 - Expired/revoked sessions return a clear unauthorized response. Enforce admin authorization on every protected backend route, regardless of UI guards.
@@ -134,7 +135,6 @@ Paths below are relative to the chosen API prefix. Public and admin product read
 | Public/auth | POST /auth/login | Authenticate admin and create refresh family |
 | Cookie protected | POST /auth/refresh | Rotate refresh token and issue access token |
 | Cookie protected | POST /auth/logout | Revoke current refresh family |
-| Session bootstrap | GET /auth/csrf | Obtain session-bound CSRF material through an allowed origin |
 | Public | GET /categories | Category dropdown options |
 | Public | GET /products | Active, non-deleted list; search/category/page/page_size |
 | Public | GET /products/{id} | Purchasable catalog detail; hidden products return 404 |
@@ -301,6 +301,16 @@ These are narrowly related to existing requirements. None is necessary merely be
 **Verification:** active sessions remain valid, replay detection still works within the defined lifetime, and order history is preserved. Add supporting expiry indexes only where cleanup query plans warrant them.
 
 **Interview explanation:** “Expiry checks already reject old sessions. Cleanup is separate operational maintenance to control storage growth, with retention rules that preserve purchase history.”
+
+### 14.4 Cross-tab refresh coordination
+
+**Trigger:** the supported product experience includes administrators keeping multiple tabs open long enough for access-token refresh.
+
+**Proposed change:** coordinate rotation with the Web Locks API where supported and broadcast logout/session-expiry events between tabs. A tab that obtains the lock after another rotation uses the newly replaced cookie rather than replaying the consumed value. Keep the existing in-tab single-flight promise as the baseline and document fallback behavior where browser locking is unavailable.
+
+**Verification:** force simultaneous protected requests from two tabs near access-token expiry and confirm the refresh family remains active, requests retry at most once, and logout propagates to both tabs.
+
+**Interview explanation:** “Strict rotation intentionally treats reuse as suspicious. The current assessment flow prevents duplicate refreshes inside one tab; if multi-tab administration is required, I would add browser-level coordination rather than weakening replay detection.”
 
 No planned microservices, queues, caches for inventory, replicas, partitioning, or search service. Correctness, bounded queries, and measurement come first.
 

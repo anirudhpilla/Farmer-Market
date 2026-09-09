@@ -1,6 +1,10 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 
+import { useAuth } from "./auth";
+
 export function AppLayout() {
+  const { user } = useAuth();
+
   return (
     <div className="app-shell">
       <header className="site-header">
@@ -10,6 +14,9 @@ export function AppLayout() {
           </Link>
           <nav aria-label="Main navigation">
             <NavLink to="/">Products</NavLink>
+            <NavLink to={user ? "/admin" : "/admin/login"}>
+              {user ? "Admin" : "Sign in"}
+            </NavLink>
             <span className="nav-placeholder" aria-disabled="true">
               Cart (0)
             </span>
