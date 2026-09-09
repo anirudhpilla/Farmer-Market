@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     jwt_audience: str = "farmer-market-admin"
     access_token_minutes: int = 15
     refresh_session_days: int = 7
+    guest_session_days: int = 30
     cookie_secure: bool = False
     admin_email: str | None = None
     admin_password: str | None = None

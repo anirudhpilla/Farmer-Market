@@ -1,5 +1,7 @@
+from collections import defaultdict, deque
 from datetime import UTC, datetime, timedelta
 from hmac import compare_digest
+from time import monotonic
 from typing import Annotated
 
 import jwt
@@ -27,6 +29,21 @@ bearer = HTTPBearer(auto_error=False)
 dummy_password_hash = (
     "$argon2id$v=19$m=65536,t=3,p=4$Y2hhbmdlLW1l$4n7J8ux9k6sY6lLYIFQeU41dnw2LA2gFcX2N5f6e/Go"
 )
+rate_attempts: dict[str, deque[float]] = defaultdict(deque)
+
+
+def check_rate_limit(key: str, *, limit: int, window_seconds: int = 60) -> None:
+    now = monotonic()
+    attempts = rate_attempts[key]
+    while attempts and attempts[0] <= now - window_seconds:
+        attempts.popleft()
+    if len(attempts) >= limit:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many authentication attempts; try again shortly",
+            headers={"Retry-After": str(window_seconds)},
+        )
+    attempts.append(now)
 
 
 def reject_request(detail: str = "Invalid or expired session") -> HTTPException:
@@ -81,6 +98,8 @@ async def login(
     session: DatabaseSession,
 ) -> AuthResponse:
     check_origin(request)
+    client_host = request.client.host if request.client else "unknown"
+    check_rate_limit(f"login:{client_host}:{body.email.lower()}", limit=10)
     user = await session.scalar(select(User).where(User.email == body.email.lower()))
 
     stored_hash = user.password_hash if user else dummy_password_hash
@@ -121,6 +140,8 @@ async def refresh(
     csrf_token: Annotated[str | None, Header(alias="X-CSRF-Token")] = None,
 ) -> AuthResponse:
     check_origin(request)
+    client_host = request.client.host if request.client else "unknown"
+    check_rate_limit(f"refresh:{client_host}", limit=30)
     if not refresh_token or not csrf_token:
         raise reject_request()
 

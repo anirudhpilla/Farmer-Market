@@ -4,11 +4,16 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
 import { AppLayout } from "./AppLayout";
 import { AuthProvider, RequireAdmin } from "./auth";
+import { CartProvider } from "./cart";
 import { AdminPage } from "./pages/AdminPage";
+import { AdminOrdersPage } from "./pages/AdminOrdersPage";
 import { AdminProductFormPage } from "./pages/AdminProductFormPage";
+import { CartPage } from "./pages/CartPage";
+import { CheckoutPage } from "./pages/CheckoutPage";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
+import { OrderConfirmationPage } from "./pages/OrderConfirmationPage";
 import { ProductDetailsPage } from "./pages/ProductDetailsPage";
 import "./styles.css";
 
@@ -19,6 +24,9 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: "products/:productId", element: <ProductDetailsPage /> },
+      { path: "cart", element: <CartPage /> },
+      { path: "checkout", element: <CheckoutPage /> },
+      { path: "orders/:orderId", element: <OrderConfirmationPage /> },
       { path: "admin/login", element: <LoginPage /> },
       {
         element: <RequireAdmin />,
@@ -26,6 +34,8 @@ const router = createBrowserRouter([
           { path: "admin", element: <AdminPage /> },
           { path: "admin/products/new", element: <AdminProductFormPage /> },
           { path: "admin/products/:productId/edit", element: <AdminProductFormPage /> },
+          { path: "admin/orders", element: <AdminOrdersPage /> },
+          { path: "admin/orders/:orderId", element: <AdminOrdersPage /> },
         ],
       },
       { path: "*", element: <NotFoundPage /> },
@@ -42,7 +52,9 @@ if (!rootElement) {
 createRoot(rootElement).render(
   <StrictMode>
     <AuthProvider>
-      <RouterProvider router={router} />
+      <CartProvider>
+        <RouterProvider router={router} />
+      </CartProvider>
     </AuthProvider>
   </StrictMode>,
 );

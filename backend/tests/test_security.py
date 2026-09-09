@@ -1,3 +1,6 @@
+from fastapi import HTTPException
+
+from app.api.auth import check_rate_limit, rate_attempts
 from app.models import User, UserRole
 from app.security import create_access_token, decode_access_token, hash_password, verify_password
 
@@ -18,3 +21,20 @@ def test_access_token_contains_the_expected_identity() -> None:
     assert claims["sub"] == "12"
     assert claims["role"] == "admin"
     assert claims["type"] == "access"
+
+
+def test_process_local_auth_rate_limit() -> None:
+    key = "test:rate-limit"
+    rate_attempts.pop(key, None)
+    check_rate_limit(key, limit=2)
+    check_rate_limit(key, limit=2)
+
+    try:
+        check_rate_limit(key, limit=2)
+    except HTTPException as error:
+        assert error.status_code == 429
+        assert error.headers == {"Retry-After": "60"}
+    else:
+        raise AssertionError("Expected the third request to be rate limited")
+    finally:
+        rate_attempts.pop(key, None)

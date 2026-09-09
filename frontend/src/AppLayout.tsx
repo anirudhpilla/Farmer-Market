@@ -1,9 +1,11 @@
 import { Link, NavLink, Outlet } from "react-router-dom";
 
 import { useAuth } from "./auth";
+import { useCart } from "./cart";
 
 export function AppLayout() {
   const { user } = useAuth();
+  const { cart } = useCart();
 
   return (
     <div className="app-shell">
@@ -17,9 +19,8 @@ export function AppLayout() {
             <NavLink to={user ? "/admin" : "/admin/login"}>
               {user ? "Admin" : "Sign in"}
             </NavLink>
-            <span className="nav-placeholder" aria-disabled="true">
-              Cart (0)
-            </span>
+            {user && <NavLink to="/admin/orders">Orders</NavLink>}
+            <NavLink to="/cart">Cart ({cart?.item_count ?? 0})</NavLink>
           </nav>
         </div>
       </header>

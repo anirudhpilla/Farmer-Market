@@ -1,31 +1,85 @@
 # Farmer Market
 
-Farmer Market is the React + FastAPI shopping-cart assessment described in
-`Farmer-Products-Final-Project-Outline.md`.
+A full-stack shopping-cart assessment built with React, TypeScript, FastAPI,
+SQLAlchemy, and PostgreSQL. Customers can browse products and shop as guests.
+An administrator can manage products and inspect confirmed orders.
 
-The project is being implemented in explainable vertical slices. The current
-iteration provides the public product catalog and admin authentication with
-rotating refresh tokens, plus protected product creation, editing, activation,
-stock updates, and soft deletion.
+The implementation is intentionally a small modular monolith. It keeps ordinary
+queries inside clearly named route files and avoids generic repository/service
+layers. The two workflows that need careful coordination—refresh-token rotation
+and checkout—remain visible and testable rather than hidden behind scaffolding.
 
-## Repository layout
+## Features
+
+### Customer
+
+- Responsive product catalog, details, search, category filter, and pagination
+- Persistent anonymous cart with add, update, remove, totals, and stock warnings
+- Checkout review with stale cart, price, availability, and stock validation
+- Idempotent order placement and an owned order-confirmation page
+
+### Administrator
+
+- Seeded admin login with Argon2 password hashing
+- Short-lived JWT access tokens held in browser memory
+- Opaque HttpOnly refresh cookies with rotation and replay-family revocation
+- Create, edit, activate/deactivate, soft-delete, and update product stock
+- Optimistic version check for administrator stock edits
+- Paginated confirmed-order list and order detail
+
+### Correctness and security
+
+- Pydantic request validation and response filtering
+- PostgreSQL foreign keys, checks, uniqueness rules, and incremental migrations
+- Decimal money on the backend and decimal strings in JSON
+- Guest and refresh credentials stored as digests rather than raw tokens
+- Origin plus session-bound CSRF checks on cookie-authenticated writes
+- Basic single-process authentication throttling, request-ID logging, and safe global 500 responses
+- Object-level cart and order ownership checks
+- Transactional checkout with row locks, one commit, and immutable order snapshots
+
+## Project layout
 
 ```text
-backend/   FastAPI application, SQLAlchemy models, and Alembic migrations
-frontend/  React and TypeScript application
+backend/
+  app/
+    api/            catalog, auth, admin products, guest cart, and orders
+    scripts/        repeatable development seed commands
+    config.py       environment configuration
+    database.py     async engine and request-scoped session
+    models.py       SQLAlchemy tables and database constraints
+    schemas.py      Pydantic API contracts
+    security.py     passwords, JWTs, and opaque-token helpers
+  migrations/       four incremental Alembic migrations
+  tests/            focused API, business-rule, and schema tests
+frontend/
+  src/
+    components/     small reusable display components
+    pages/          customer and administrator screens
+    api.ts          shared Axios client and API functions
+    auth.tsx        administrator session state
+    cart.tsx        guest cart state
 ```
 
-Detailed setup instructions will grow with the implementation. For now, copy
-the environment examples, start PostgreSQL, install dependencies, run the
-migration, and start both applications.
+## Prerequisites
 
-## Run the current iteration
+- Python 3.12 or newer
+- `uv`
+- Node.js 20 or newer and npm
+- PostgreSQL 15 or newer
+- Docker and Docker Compose are optional conveniences for the database
 
-Prerequisites: Python 3.12+, `uv`, Node.js 20+, npm, Docker, and Docker Compose.
+## Local setup
+
+Start PostgreSQL with Docker Compose:
 
 ```bash
 docker compose up -d db
+```
 
+Set up and run the backend:
+
+```bash
 cd backend
 cp .env.example .env
 uv sync
@@ -35,7 +89,11 @@ uv run python -m app.scripts.seed_admin
 uv run uvicorn app.main:app --reload
 ```
 
-In a second terminal:
+Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` in `backend/.env` before running the
+admin seed. The catalog seed is safe to rerun: it adds missing categories and
+products by name. Neither seed runs automatically during application startup.
+
+In another terminal, run the frontend:
 
 ```bash
 cd frontend
@@ -44,71 +102,155 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` to browse the catalog. FastAPI documentation is at
-`http://localhost:8000/docs`.
+Open:
 
-The seed command is safe to rerun: it creates missing categories and products
-whose names are not already present. It is development/demo setup, not an
-application-startup responsibility.
+- Customer application: `http://localhost:5173`
+- Admin login: `http://localhost:5173/admin/login`
+- Interactive API documentation: `http://localhost:8000/docs`
 
-## Current API
+The checked-in environment examples document every setting. Development uses
+separate localhost origins and non-secure cookies. Set secure cookies in an
+HTTPS deployment and keep the configured frontend origin exact.
+
+## API summary
 
 ```text
-GET /api/v1/health
-GET /api/v1/categories
-GET /api/v1/products
-GET /api/v1/products/{product_id}
-POST /api/v1/auth/login
-POST /api/v1/auth/refresh
-POST /api/v1/auth/logout
-GET /api/v1/auth/me
-GET /api/v1/admin/products
-POST /api/v1/admin/products
-GET /api/v1/admin/products/{product_id}
-PATCH /api/v1/admin/products/{product_id}
+GET    /api/v1/health
+GET    /api/v1/categories
+GET    /api/v1/products
+GET    /api/v1/products/{product_id}
+
+POST   /api/v1/auth/login
+POST   /api/v1/auth/refresh
+POST   /api/v1/auth/logout
+GET    /api/v1/auth/me
+
+GET    /api/v1/admin/products
+POST   /api/v1/admin/products
+GET    /api/v1/admin/products/{product_id}
+PATCH  /api/v1/admin/products/{product_id}
 DELETE /api/v1/admin/products/{product_id}
-PATCH /api/v1/admin/products/{product_id}/status
-PATCH /api/v1/admin/products/{product_id}/stock
+PATCH  /api/v1/admin/products/{product_id}/status
+PATCH  /api/v1/admin/products/{product_id}/stock
+
+POST   /api/v1/guest-session
+GET    /api/v1/cart
+POST   /api/v1/cart/items
+PATCH  /api/v1/cart/items/{item_id}
+DELETE /api/v1/cart/items/{item_id}
+
+POST   /api/v1/orders/checkout
+GET    /api/v1/orders/{order_id}
+GET    /api/v1/admin/orders
+GET    /api/v1/admin/orders/{order_id}
 ```
 
-The product list accepts `search`, `category_id`, `page`, and `page_size` query
-parameters. Customer endpoints return only active, non-deleted products.
+Product listing accepts `search`, `category_id`, `page`, and `page_size`.
+Public routes expose only active, non-deleted products. Admin product listing
+also includes inactive products but not soft-deleted rows.
 
-The login page is at `http://localhost:5173/admin/login`. Set `ADMIN_EMAIL`
-and `ADMIN_PASSWORD` in `backend/.env` before running the admin seed command.
-The access token remains in frontend memory. The opaque refresh token is stored
-in an HttpOnly cookie, while only its SHA-256 digest is stored in PostgreSQL.
-Each refresh consumes the old token and creates a replacement; presenting a
-consumed token revokes that refresh family.
+## Authentication design
 
-After signing in, open `http://localhost:5173/admin`. Product edits intentionally
-exclude stock and status: those have explicit controls in the admin list. Stock
-updates send the product version last read by the browser; stale versions return
-409 instead of overwriting a newer inventory value. Delete is a soft delete, so
-the row remains available for future order-history relationships.
+The access token is a short-lived signed JWT stored only in frontend memory.
+The refresh credential is a random opaque token in an HttpOnly cookie, while
+PostgreSQL stores only its SHA-256 digest. A successful refresh consumes the old
+token and returns a replacement. Reusing a consumed token revokes the entire
+refresh family.
 
-Examples:
+The frontend allows only one refresh request in flight per browser tab and
+retries an eligible admin request once. Logout revokes the family and clears
+browser state. Already issued access JWTs remain valid until their short expiry.
+
+## Guest ownership and cart behavior
+
+The server establishes an anonymous guest credential in an HttpOnly cookie.
+Cart routes derive the guest, cart, and item from that credential; they do not
+trust customer or cart IDs supplied by the browser. The frontend sends a
+separate guest CSRF value on every mutation.
+
+Repeatedly adding one product increments its existing cart line. Cart prices
+are current catalog prices and are not reserved. The server calculates all line
+totals and the grand total with `Decimal`.
+
+## Transactional checkout
+
+Checkout receives the reviewed cart version, line quantities, and prices as
+comparison data. It never trusts them as the source of inventory or money.
+
+Inside one database transaction, the backend:
+
+1. Locks the guest and open cart, serializing checkout against cart edits.
+2. Confirms the cart version and exact contents.
+3. Locks products in ascending ID order.
+4. Rechecks status, deletion, stock, and reviewed prices.
+5. Decrements stock and increments product versions.
+6. Creates the order and immutable name/price/quantity snapshots.
+7. Converts the cart and commits once.
+
+Any failure before commit rolls back the complete unit of work. A unique cart
+relationship prevents converting the same cart twice. `Idempotency-Key` plus a
+request fingerprint lets a lost successful response be replayed without another
+stock decrement, while rejecting reuse of the key for different input.
+
+## Database migrations
 
 ```text
-GET /api/v1/products?search=tomato
-GET /api/v1/products?category_id=2&page=1&page_size=6
+20260908_01  categories and products
+20260909_02  users and rotating refresh sessions/tokens
+20260910_03  guest sessions, carts, and cart items
+20260911_04  orders and immutable order-item snapshots
 ```
 
-## Checks
+Alembic is the only schema source. The application does not call
+`Base.metadata.create_all()` at startup.
+
+## Verification
 
 ```bash
 cd backend
 uv run ruff check .
 uv run pytest
+uv run alembic upgrade head --sql
 
 cd ../frontend
 npm run lint
 npm run build
 ```
 
-The first migration contains the catalog tables and the second adds
-authentication. Admin product management reuses the existing product columns,
-so it does not invent an empty migration. Cart and order tables will be added
-when those features are implemented. Do not use `Base.metadata.create_all()` in
-application startup: Alembic is the versioned, reviewable source of database
-changes.
+The final automated run contains 44 passing backend tests. It covers protected
+routes, refresh rotation and replay, cart ownership and CSRF, current-price
+totals, checkout snapshots, stale-price rejection, idempotent replay, mismatched
+idempotency use, and database constraints. Frontend lint, TypeScript compilation,
+and the Vite production build also pass.
+
+Unexpected backend errors are logged with their request ID and returned as a
+generic HTTP 500 response. Validation errors and intentional HTTP errors retain
+FastAPI's normal, more specific responses.
+
+Row-lock behavior should additionally be smoke-tested against a real PostgreSQL
+instance using concurrent connections before production deployment. Unit mocks
+and SQLite cannot prove PostgreSQL locking semantics.
+
+## Suggested demonstration
+
+1. Browse, search, and filter the customer catalog.
+2. Sign in as the seeded administrator and create or edit a product.
+3. Change stock and deactivate/reactivate the product.
+4. Add products to the guest cart and update a quantity.
+5. Intentionally reduce stock or change a price to show checkout conflict handling.
+6. Review again and place the order.
+7. Show the confirmation, empty active cart, reduced product stock, and admin order detail.
+8. Retry the same checkout request to explain idempotency.
+
+## Deliberate limitations and future enhancements
+
+This assessment has no customer accounts, payment gateway, shipping, tax,
+discounts, cancellation, or refunds. Process-local authentication throttling is
+not deployment-wide. Multi-tab refresh coordination and scheduled expired-token
+cleanup are deferred until the deployment requires them.
+
+Product search intentionally uses simple parameterized substring matching. If
+representative measurements show it is slow, evaluate PostgreSQL `pg_trgm` with
+a GIN trigram index and compare `EXPLAIN (ANALYZE, BUFFERS)`, latency, index size,
+and write cost before adopting it. The current catalog does not justify that
+operational complexity.

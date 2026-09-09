@@ -1,3 +1,4 @@
+from datetime import datetime
 from decimal import Decimal
 from typing import Literal
 
@@ -131,3 +132,102 @@ class ProductStockUpdate(BaseModel):
 
     available_quantity: int = Field(ge=0, le=1_000_000)
     expected_version: int = Field(ge=1)
+
+
+class CartItemCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: int = Field(ge=1)
+    quantity: int = Field(ge=1, le=1_000_000)
+
+
+class CartItemUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    quantity: int = Field(ge=1, le=1_000_000)
+
+
+class CartItemRead(BaseModel):
+    id: int
+    product_id: int
+    name: str
+    image_url: str
+    unit_price: Decimal
+    quantity: int
+    line_total: Decimal
+    available_quantity: int
+    issue: Literal["unavailable", "insufficient_stock"] | None
+
+    @field_serializer("unit_price", "line_total")
+    def serialize_money(self, value: Decimal) -> str:
+        return f"{value:.2f}"
+
+
+class CartRead(BaseModel):
+    id: int | None
+    version: int
+    items: list[CartItemRead]
+    item_count: int
+    grand_total: Decimal
+    currency: str = "INR"
+
+    @field_serializer("grand_total")
+    def serialize_total(self, value: Decimal) -> str:
+        return f"{value:.2f}"
+
+
+class CheckoutItem(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: int = Field(ge=1)
+    quantity: int = Field(ge=1, le=1_000_000)
+    unit_price: Decimal = Field(gt=0, max_digits=12, decimal_places=2)
+
+
+class CheckoutRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    expected_cart_version: int = Field(ge=1)
+    items: list[CheckoutItem] = Field(min_length=1, max_length=100)
+
+    @model_validator(mode="after")
+    def reject_duplicate_products(self):
+        product_ids = [item.product_id for item in self.items]
+        if len(product_ids) != len(set(product_ids)):
+            raise ValueError("Checkout items cannot contain duplicate products")
+        return self
+
+
+class OrderItemRead(BaseModel):
+    id: int
+    product_id: int
+    product_name: str
+    unit_price: Decimal
+    quantity: int
+    line_total: Decimal
+
+    @field_serializer("unit_price", "line_total")
+    def serialize_money(self, value: Decimal) -> str:
+        return f"{value:.2f}"
+
+
+class OrderRead(BaseModel):
+    id: int
+    status: Literal["confirmed"]
+    currency: str
+    grand_total: Decimal
+    item_count: int
+    items: list[OrderItemRead]
+    created_at: datetime
+
+    @field_serializer("grand_total")
+    def serialize_total(self, value: Decimal) -> str:
+        return f"{value:.2f}"
+
+
+class OrderPage(BaseModel):
+    items: list[OrderRead]
+    page: int
+    page_size: int
+    total: int
+    total_pages: int

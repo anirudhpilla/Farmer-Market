@@ -51,6 +51,54 @@ export type ProductInput = {
 
 export type ProductEditInput = Omit<ProductInput, "available_quantity" | "status">;
 
+export type CartItem = {
+  id: number;
+  product_id: number;
+  name: string;
+  image_url: string;
+  unit_price: string;
+  quantity: number;
+  line_total: string;
+  available_quantity: number;
+  issue: "unavailable" | "insufficient_stock" | null;
+};
+
+export type Cart = {
+  id: number | null;
+  version: number;
+  items: CartItem[];
+  item_count: number;
+  grand_total: string;
+  currency: "INR";
+};
+
+export type OrderItem = {
+  id: number;
+  product_id: number;
+  product_name: string;
+  unit_price: string;
+  quantity: number;
+  line_total: string;
+};
+
+export type Order = {
+  id: number;
+  status: "confirmed";
+  currency: "INR";
+  grand_total: string;
+  item_count: number;
+  items: OrderItem[];
+  created_at: string;
+};
+
+export type OrderPage = {
+  items: Order[];
+  page: number;
+  page_size: number;
+  total: number;
+  total_pages: number;
+};
+
 export type AdminUser = {
   id: number;
   email: string;
@@ -78,10 +126,12 @@ const api = axios.create({
 
 let accessToken: string | null = null;
 let refreshRequest: Promise<AuthResponse> | null = null;
+let guestSessionRequest: Promise<void> | null = null;
 let authExpiredHandler: (() => void) | null = null;
 
 api.interceptors.request.use((config) => {
-  if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+  const protectedPath = config.url?.startsWith("/admin/") || config.url === "/auth/me";
+  if (accessToken && protectedPath) config.headers.Authorization = `Bearer ${accessToken}`;
   return config;
 });
 
@@ -91,6 +141,14 @@ function csrfHeader() {
     .find((item) => item.startsWith("csrf_token="));
 
   return cookie ? { "X-CSRF-Token": decodeURIComponent(cookie.split("=")[1]) } : {};
+}
+
+function guestCsrfHeader() {
+  const cookie = document.cookie
+    .split("; ")
+    .find((item) => item.startsWith("guest_csrf_token="));
+
+  return cookie ? { "X-Guest-CSRF-Token": decodeURIComponent(cookie.split("=")[1]) } : {};
 }
 
 export function setAccessToken(token: string | null) {
@@ -134,8 +192,15 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     const request = error.config as RetriedRequest | undefined;
     const isAuthRequest = request?.url?.startsWith("/auth/");
+    const isAdminRequest = request?.url?.startsWith("/admin/");
 
-    if (error.response?.status !== 401 || !request || request.refreshAttempted || isAuthRequest) {
+    if (
+      error.response?.status !== 401 ||
+      !request ||
+      request.refreshAttempted ||
+      isAuthRequest ||
+      !isAdminRequest
+    ) {
       return Promise.reject(error);
     }
 
@@ -248,4 +313,80 @@ export async function setAdminProductStock(
 
 export async function deleteAdminProduct(productId: number): Promise<void> {
   await api.delete(`/admin/products/${productId}`);
+}
+
+export function ensureGuestSession(): Promise<void> {
+  if (!guestSessionRequest) {
+    guestSessionRequest = api
+      .post("/guest-session", null, { headers: guestCsrfHeader() })
+      .then(() => undefined)
+      .finally(() => {
+        guestSessionRequest = null;
+      });
+  }
+  return guestSessionRequest;
+}
+
+export async function getCart(signal?: AbortSignal): Promise<Cart> {
+  const response = await api.get<Cart>("/cart", { signal });
+  return response.data;
+}
+
+export async function addCartItem(productId: number, quantity: number): Promise<Cart> {
+  const response = await api.post<Cart>(
+    "/cart/items",
+    { product_id: productId, quantity },
+    { headers: guestCsrfHeader() },
+  );
+  return response.data;
+}
+
+export async function updateCartItem(itemId: number, quantity: number): Promise<Cart> {
+  const response = await api.patch<Cart>(
+    `/cart/items/${itemId}`,
+    { quantity },
+    { headers: guestCsrfHeader() },
+  );
+  return response.data;
+}
+
+export async function removeCartItem(itemId: number): Promise<Cart> {
+  const response = await api.delete<Cart>(`/cart/items/${itemId}`, {
+    headers: guestCsrfHeader(),
+  });
+  return response.data;
+}
+
+export async function checkoutCart(cart: Cart, idempotencyKey: string): Promise<Order> {
+  const response = await api.post<Order>(
+    "/orders/checkout",
+    {
+      expected_cart_version: cart.version,
+      items: cart.items.map((item) => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+      })),
+    },
+    { headers: { ...guestCsrfHeader(), "Idempotency-Key": idempotencyKey } },
+  );
+  return response.data;
+}
+
+export async function getOrder(orderId: number, signal?: AbortSignal): Promise<Order> {
+  const response = await api.get<Order>(`/orders/${orderId}`, { signal });
+  return response.data;
+}
+
+export async function getAdminOrders(page: number, signal?: AbortSignal): Promise<OrderPage> {
+  const response = await api.get<OrderPage>("/admin/orders", {
+    params: { page, page_size: 20 },
+    signal,
+  });
+  return response.data;
+}
+
+export async function getAdminOrder(orderId: number, signal?: AbortSignal): Promise<Order> {
+  const response = await api.get<Order>(`/admin/orders/${orderId}`, { signal });
+  return response.data;
 }
