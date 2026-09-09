@@ -16,7 +16,7 @@ export function ProductDetailsPage() {
     product: Product | null;
     failed: boolean;
   } | null>(null);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState("1");
   const [adding, setAdding] = useState(false);
   const [cartMessage, setCartMessage] = useState("");
   const [cartError, setCartError] = useState("");
@@ -54,13 +54,19 @@ export function ProductDetailsPage() {
   }
 
   const inStock = product.available_quantity > 0;
+  const selectedQuantity = Number(quantity);
+  const validQuantity =
+    quantity.trim() !== "" &&
+    Number.isInteger(selectedQuantity) &&
+    selectedQuantity >= 1 &&
+    selectedQuantity <= product.available_quantity;
 
   async function addToCart(selectedProductId: number) {
     setAdding(true);
     setCartError("");
     setCartMessage("");
     try {
-      await addItem(selectedProductId, quantity);
+      await addItem(selectedProductId, selectedQuantity);
       setCartMessage("Added to your cart.");
     } catch (requestError) {
       setCartError(getApiError(requestError, "The product could not be added."));
@@ -91,7 +97,7 @@ export function ProductDetailsPage() {
               max={product.available_quantity}
               value={quantity}
               disabled={!inStock || adding}
-              onChange={(event) => setQuantity(Number(event.target.value))}
+              onChange={(event) => setQuantity(event.target.value)}
             />
           </label>
           <button
@@ -100,9 +106,7 @@ export function ProductDetailsPage() {
               !cartReady ||
               !inStock ||
               adding ||
-              !Number.isInteger(quantity) ||
-              quantity < 1 ||
-              quantity > product.available_quantity
+              !validQuantity
             }
             onClick={() => void addToCart(product.id)}
           >

@@ -1,6 +1,6 @@
 import logging
 import re
-from collections.abc import AsyncIterator
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Annotated
 from uuid import uuid4
@@ -25,7 +25,7 @@ logger = logging.getLogger("farmer_market.requests")
 
 
 @asynccontextmanager
-async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
     yield
     await engine.dispose()
 

@@ -143,6 +143,12 @@ function csrfHeader() {
   return cookie ? { "X-CSRF-Token": decodeURIComponent(cookie.split("=")[1]) } : {};
 }
 
+export function hasAdminSession() {
+  return document.cookie
+    .split("; ")
+    .some((item) => item.startsWith("csrf_token="));
+}
+
 function guestCsrfHeader() {
   const cookie = document.cookie
     .split("; ")

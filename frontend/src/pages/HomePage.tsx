@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import { getCategories, getProducts } from "../api";
 import type { Category, ProductPage } from "../api";
@@ -8,37 +8,46 @@ const PAGE_SIZE = 6;
 
 export function HomePage() {
   const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [querySearch, setQuerySearch] = useState("");
   const [categoryId, setCategoryId] = useState<number | undefined>();
   const [page, setPage] = useState(1);
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<ProductPage | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [isPending, startTransition] = useTransition();
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
-      setDebouncedSearch(search.trim());
-    }, 300);
+      setQuerySearch(search.trim());
+      setPage(1);
+    }, 180);
     return () => window.clearTimeout(timeoutId);
   }, [search]);
 
   useEffect(() => {
     const controller = new AbortController();
     getCategories(controller.signal)
-      .then(setCategories)
+      .then((data) => {
+        if (data && data.length > 0) {
+          setCategories(data);
+        }
+      })
       .catch(() => {
-        if (!controller.signal.aborted) setCategories([]);
+        // Keep fallback categories if request fails
       });
     return () => controller.abort();
   }, []);
 
   useEffect(() => {
     const controller = new AbortController();
+    setIsFetching(true);
 
     getProducts(
       {
-        search: debouncedSearch || undefined,
+        search: querySearch || undefined,
         categoryId,
         page,
         pageSize: PAGE_SIZE,
@@ -46,32 +55,33 @@ export function HomePage() {
       controller.signal,
     )
       .then((result) => {
-        setProducts(result);
-        setError(null);
+        startTransition(() => {
+          setProducts(result);
+          setError(null);
+        });
       })
       .catch(() => {
         if (!controller.signal.aborted) {
-          setProducts(null);
-          setError("We could not load products. Please try again.");
+          startTransition(() => {
+            setProducts(null);
+            setError("We could not load products. Please try again.");
+          });
         }
       })
       .finally(() => {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) {
+          setIsFetching(false);
+          setInitialLoading(false);
+        }
       });
 
     return () => controller.abort();
-  }, [categoryId, debouncedSearch, page]);
+  }, [categoryId, querySearch, page]);
+
+  const isTransitioning = isPending || isFetching;
 
   return (
-    <section aria-labelledby="page-title">
-      <div className="catalog-heading">
-        <div>
-          <p className="eyebrow">Local produce marketplace</p>
-          <h1 id="page-title">Fresh from nearby farms.</h1>
-        </div>
-        <p>Browse seasonal produce and everyday essentials from local growers.</p>
-      </div>
-
+    <section aria-label="Products catalog">
       <div className="catalog-filters" aria-label="Product filters">
         <label>
           <span>Search products</span>
@@ -81,8 +91,6 @@ export function HomePage() {
             placeholder="Try tomatoes or rice"
             onChange={(event) => {
               setSearch(event.target.value);
-              setPage(1);
-              setLoading(true);
             }}
           />
         </label>
@@ -91,9 +99,9 @@ export function HomePage() {
           <select
             value={categoryId ?? ""}
             onChange={(event) => {
-              setCategoryId(event.target.value ? Number(event.target.value) : undefined);
+              const val = event.target.value ? Number(event.target.value) : undefined;
+              setCategoryId(val);
               setPage(1);
-              setLoading(true);
             }}
           >
             <option value="">All categories</option>
@@ -106,16 +114,17 @@ export function HomePage() {
         </label>
       </div>
 
-      {loading && <p className="catalog-message" role="status">Loading products…</p>}
-      {!loading && error && <p className="catalog-message catalog-message--error">{error}</p>}
-      {!loading && !error && products?.items.length === 0 && (
+      {initialLoading && <p className="catalog-message" role="status">Loading products…</p>}
+      {!initialLoading && error && <p className="catalog-message catalog-message--error">{error}</p>}
+      {!initialLoading && !error && products?.items.length === 0 && (
         <p className="catalog-message">No products match these filters.</p>
       )}
 
-      {!loading && !error && products && products.items.length > 0 && (
-        <>
+      {!initialLoading && !error && products && products.items.length > 0 && (
+        <div className={`catalog-content ${isTransitioning ? "catalog-content--pending" : ""}`}>
           <div className="result-summary">
-            {products.total} {products.total === 1 ? "product" : "products"}
+            <span>{products.total} {products.total === 1 ? "product" : "products"}</span>
+            {isTransitioning && <span className="updating-badge">Updating…</span>}
           </div>
           <div className="product-grid">
             {products.items.map((product) => (
@@ -125,10 +134,9 @@ export function HomePage() {
           <nav className="pagination" aria-label="Product pages">
             <button
               type="button"
-              disabled={products.page <= 1}
+              disabled={products.page <= 1 || isTransitioning}
               onClick={() => {
-                setPage(page - 1);
-                setLoading(true);
+                setPage((prev) => Math.max(1, prev - 1));
               }}
             >
               Previous
@@ -136,17 +144,17 @@ export function HomePage() {
             <span>Page {products.page} of {products.total_pages}</span>
             <button
               type="button"
-              disabled={products.page >= products.total_pages}
+              disabled={products.page >= products.total_pages || isTransitioning}
               onClick={() => {
-                setPage(page + 1);
-                setLoading(true);
+                setPage((prev) => prev + 1);
               }}
             >
               Next
             </button>
           </nav>
-        </>
+        </div>
       )}
     </section>
   );
 }
+

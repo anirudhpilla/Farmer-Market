@@ -123,7 +123,7 @@ export function AdminProductFormPage() {
 
       <form className="product-form" onSubmit={submit}>
         <label>
-          <span>Name and sale unit</span>
+          <span>Name and sale unit *</span>
           <input
             value={form.name}
             minLength={2}
@@ -133,7 +133,7 @@ export function AdminProductFormPage() {
           />
         </label>
         <label>
-          <span>Category</span>
+          <span>Category *</span>
           <select
             value={form.categoryId}
             required
@@ -146,7 +146,7 @@ export function AdminProductFormPage() {
           </select>
         </label>
         <label>
-          <span>Farmer name</span>
+          <span>Farmer name *</span>
           <input
             value={form.farmerName}
             minLength={2}
@@ -156,7 +156,7 @@ export function AdminProductFormPage() {
           />
         </label>
         <label>
-          <span>Price (INR)</span>
+          <span>Price (INR) *</span>
           <input
             type="number"
             min="0.01"
@@ -167,7 +167,7 @@ export function AdminProductFormPage() {
           />
         </label>
         <label className="product-form__wide">
-          <span>Description</span>
+          <span>Description *</span>
           <textarea
             value={form.description}
             minLength={10}
@@ -177,7 +177,7 @@ export function AdminProductFormPage() {
           />
         </label>
         <label className="product-form__wide">
-          <span>Image URL</span>
+          <span>Image URL *</span>
           <input
             type="url"
             value={form.imageUrl}

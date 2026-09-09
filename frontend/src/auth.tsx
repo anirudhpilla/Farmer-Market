@@ -4,6 +4,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import {
   login as loginRequest,
   logout as logoutRequest,
+  hasAdminSession,
   onAuthExpired,
   refreshSession,
   setAccessToken,
@@ -21,9 +22,11 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AdminUser | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(hasAdminSession);
 
   useEffect(() => {
+    if (!hasAdminSession()) return;
+
     let active = true;
 
     refreshSession()
