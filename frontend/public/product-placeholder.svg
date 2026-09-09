@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 560" role="img" aria-labelledby="title">
+  <title id="title">Product image unavailable</title>
+  <rect width="800" height="560" fill="#e8eee4" />
+  <path d="M410 356c-42-88-22-157 61-205 12 83-10 151-61 205Z" fill="#6a936a" />
+  <path d="M393 366c-57-70-123-83-199-39 58 58 122 73 199 39Z" fill="#87aa78" />
+  <path d="M401 376c-4-95 25-173 88-233" fill="none" stroke="#396342" stroke-width="18" stroke-linecap="round" />
+  <text x="400" y="445" text-anchor="middle" font-family="system-ui, sans-serif" font-size="28" fill="#45604b">Farmer Market</text>
+</svg>
+
