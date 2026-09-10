@@ -379,6 +379,14 @@ export async function checkoutCart(cart: Cart, idempotencyKey: string): Promise<
   return response.data;
 }
 
+export async function getGuestOrders(page: number, signal?: AbortSignal): Promise<OrderPage> {
+  const response = await api.get<OrderPage>("/orders", {
+    params: { page, page_size: 20 },
+    signal,
+  });
+  return response.data;
+}
+
 export async function getOrder(orderId: number, signal?: AbortSignal): Promise<Order> {
   const response = await api.get<Order>(`/orders/${orderId}`, { signal });
   return response.data;

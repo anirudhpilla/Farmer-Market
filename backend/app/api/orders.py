@@ -219,6 +219,37 @@ async def checkout(
     return order_response(order)
 
 
+@router.get("/orders", response_model=OrderPage)
+async def list_guest_orders(
+    session: DatabaseSession,
+    guest_token: Annotated[str | None, Cookie()] = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=50)] = 20,
+) -> OrderPage:
+    guest = await find_guest(session, guest_token)
+    owned = Order.guest_session_id == guest.id
+    total = await session.scalar(
+        select(func.count()).select_from(Order).where(owned)
+    ) or 0
+    orders = list(
+        await session.scalars(
+            select(Order)
+            .options(selectinload(Order.items))
+            .where(owned)
+            .order_by(Order.created_at.desc(), Order.id.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+    )
+    return OrderPage(
+        items=[order_response(order) for order in orders],
+        page=page,
+        page_size=page_size,
+        total=total,
+        total_pages=ceil(total / page_size),
+    )
+
+
 @router.get("/orders/{order_id}", response_model=OrderRead)
 async def get_guest_order(
     order_id: int,

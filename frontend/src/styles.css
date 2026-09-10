@@ -439,6 +439,28 @@ a:focus-visible {
   cursor: wait;
 }
 
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  width: 100%;
+  padding-right: 3rem;
+}
+
+.auth-card .password-toggle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 100%;
+  padding: 0;
+  color: #27633c;
+  background: transparent;
+}
+
 .form-error {
   margin: 0;
   color: #8a3f29;

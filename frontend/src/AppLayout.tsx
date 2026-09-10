@@ -16,9 +16,9 @@ export function AppLayout() {
           </Link>
           <nav aria-label="Main navigation">
             <NavLink to="/">Products</NavLink>
-            {user && <NavLink to="/admin/orders">Orders</NavLink>}
-            {!user && <NavLink to="/cart">Cart ({cart?.item_count ?? 0})</NavLink>}
-            <NavLink to={user ? "/admin" : "/admin/login"}>
+            <NavLink to={user ? "/admin/orders" : "/orders"}>Orders</NavLink>
+            <NavLink to="/cart">Cart ({cart?.item_count ?? 0})</NavLink>
+            <NavLink to={user ? "/admin" : "/admin/login"} end>
               {user ? "Admin" : "Sign in"}
             </NavLink>
           </nav>
@@ -35,4 +35,3 @@ export function AppLayout() {
     </div>
   );
 }
-

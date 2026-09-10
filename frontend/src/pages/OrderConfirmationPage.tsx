@@ -30,6 +30,7 @@ export function OrderConfirmationPage() {
 
   return (
     <section className="checkout-page">
+      <Link className="back-link" to="/orders">← Your orders</Link>
       <p className="eyebrow">Order confirmed</p>
       <h1>Thank you for your order.</h1>
       <p>Order #{order.id} · {new Date(order.created_at).toLocaleString()}</p>

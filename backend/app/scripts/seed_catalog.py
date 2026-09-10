@@ -44,7 +44,7 @@ PRODUCTS = [
         "description": "Fresh coriander harvested early in the morning.",
         "price": Decimal("30.00"),
         "available_quantity": 0,
-        "image_url": "https://images.unsplash.com/photo-1601493700631-2b16ec4b4716",
+        "image_url": "https://unsplash.com/s/photos/coriander",
     },
     {
         "name": "Red Onions — 1 kg pack",

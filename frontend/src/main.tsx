@@ -11,6 +11,7 @@ import { AdminProductFormPage } from "./pages/AdminProductFormPage";
 import { CartPage } from "./pages/CartPage";
 import { CheckoutPage } from "./pages/CheckoutPage";
 import { HomePage } from "./pages/HomePage";
+import { GuestOrdersPage } from "./pages/GuestOrdersPage";
 import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { OrderConfirmationPage } from "./pages/OrderConfirmationPage";
@@ -26,6 +27,7 @@ const router = createBrowserRouter([
       { path: "products/:productId", element: <ProductDetailsPage /> },
       { path: "cart", element: <CartPage /> },
       { path: "checkout", element: <CheckoutPage /> },
+      { path: "orders", element: <GuestOrdersPage /> },
       { path: "orders/:orderId", element: <OrderConfirmationPage /> },
       { path: "admin/login", element: <LoginPage /> },
       {

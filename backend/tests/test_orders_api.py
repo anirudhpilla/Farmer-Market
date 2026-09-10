@@ -251,3 +251,74 @@ async def test_admin_orders_rejects_anonymous_request() -> None:
     response = await request_with_session(session, "GET", "/api/v1/admin/orders")
 
     assert response.status_code == 401
+
+
+async def test_guest_order_list_scopes_count_and_rows_and_paginates(monkeypatch) -> None:
+    guest = guest_session()
+    monkeypatch.setattr(orders_api, "find_guest", AsyncMock(return_value=guest))
+    session = AsyncMock(spec=AsyncSession)
+    session.scalar.return_value = 21
+    session.scalars.return_value = [completed_order("fingerprint")]
+
+    response = await request_with_session(
+        session, "GET", "/api/v1/orders?page=2&page_size=20"
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 21
+    assert body["total_pages"] == 2
+    assert body["page"] == 2
+    assert body["items"][0]["grand_total"] == "150.00"
+    for query in (session.scalar.await_args.args[0], session.scalars.await_args.args[0]):
+        assert str(query.whereclause) == "orders.guest_session_id = :guest_session_id_1"
+        assert query.compile().params["guest_session_id_1"] == guest.id
+    query = session.scalars.await_args.args[0]
+    assert query._offset_clause.value == 20
+    assert query._limit_clause.value == 20
+    assert "orders.created_at DESC, orders.id DESC" in str(query)
+
+
+async def test_guest_order_list_empty(monkeypatch) -> None:
+    monkeypatch.setattr(orders_api, "find_guest", AsyncMock(return_value=guest_session()))
+    session = AsyncMock(spec=AsyncSession)
+    session.scalar.return_value = 0
+    session.scalars.return_value = []
+    response = await request_with_session(session, "GET", "/api/v1/orders")
+    assert response.status_code == 200
+    assert response.json()["items"] == []
+    assert response.json()["total_pages"] == 0
+
+
+async def test_guest_order_list_rejects_expired_session() -> None:
+    session = AsyncMock(spec=AsyncSession)
+    guest = guest_session()
+    guest.expires_at = datetime.now(UTC) - timedelta(seconds=1)
+    session.scalar.return_value = guest
+    response = await request_with_session(session, "GET", "/api/v1/orders")
+    assert response.status_code == 401
+    session.scalars.assert_not_awaited()
+
+
+async def test_guest_order_list_rejects_missing_cookie() -> None:
+    session = AsyncMock(spec=AsyncSession)
+
+    async def override_session():
+        yield session
+
+    app.dependency_overrides[get_db_session] = override_session
+    try:
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            response = await client.get("/api/v1/orders")
+    finally:
+        app.dependency_overrides.clear()
+    assert response.status_code == 401
+    session.scalar.assert_not_awaited()
+
+
+async def test_guest_order_list_validates_pagination() -> None:
+    session = AsyncMock(spec=AsyncSession)
+    for query in ("page=0", "page_size=51"):
+        response = await request_with_session(session, "GET", f"/api/v1/orders?{query}")
+        assert response.status_code == 422
+    session.scalar.assert_not_awaited()
