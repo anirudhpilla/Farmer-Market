@@ -131,7 +131,7 @@ export function AdminPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    getAdminProducts({ page, pageSize: 20, search: debouncedSearch || undefined, categoryId }, controller.signal)
+    getAdminProducts({ page, pageSize: 25, search: debouncedSearch || undefined, categoryId }, controller.signal)
       .then((result) => {
         setProducts(result);
       })
@@ -153,7 +153,6 @@ export function AdminPage() {
     <section className="admin-products">
       <div className="admin-heading">
         <div>
-          <p className="eyebrow">Administration</p>
           <h1>Products</h1>
         </div>
         <div className="admin-heading__actions">

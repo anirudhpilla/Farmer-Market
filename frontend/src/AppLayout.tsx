@@ -28,9 +28,17 @@ export function AppLayout() {
     <div className="app-shell">
       <header className="site-header">
         <div className="page-width header-content">
-          <Link className="brand" to="/">
-            Farmer Market
-          </Link>
+          <div className="brand-group">
+            <Link className="brand" to="/">
+              <svg className="brand-logo" width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+                <rect width="32" height="32" rx="8" fill="#e8f1e5" />
+                <path d="M24 7C13 7 7 11 9 19c8 3 15-2 15-12Z" fill="#397348" />
+                <path d="M7 25 20 12" stroke="#203126" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              <span>Farmer Market</span>
+            </Link>
+            {user && <span className="admin-session-badge" aria-label="Administrator signed in">Admin</span>}
+          </div>
           <nav aria-label="Main navigation">
             <NavLink to="/">Products</NavLink>
             {user && <NavLink to="/admin" end>Manage products</NavLink>}

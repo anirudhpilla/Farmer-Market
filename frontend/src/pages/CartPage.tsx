@@ -80,7 +80,6 @@ export function CartPage() {
   if (!cart || cart.items.length === 0) {
     return (
       <section className="empty-cart">
-        <p className="eyebrow">Your cart</p>
         <h1>Your cart is empty.</h1>
         <Link className="button-link" to="/">Browse products</Link>
       </section>
@@ -91,7 +90,6 @@ export function CartPage() {
 
   return (
     <section className="cart-page">
-      <p className="eyebrow">Your cart</p>
       <h1>Shopping cart</h1>
       <div className="cart-layout">
         <div className="cart-items">

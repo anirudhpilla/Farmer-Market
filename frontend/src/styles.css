@@ -40,6 +40,9 @@ a {
 }
 
 .site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   border-bottom: 1px solid #dfe5da;
   background: #ffffff;
 }
@@ -52,11 +55,35 @@ a {
   gap: 1rem;
 }
 
+.brand-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
   color: #27633c;
   font-size: 1.15rem;
   font-weight: 750;
   text-decoration: none;
+}
+
+.brand-logo {
+  flex-shrink: 0;
+}
+
+.admin-session-badge {
+  padding: 0.2rem 0.55rem;
+  border: 1px solid #bfd2b9;
+  border-radius: 999px;
+  background: #e8f1e5;
+  color: #27633c;
+  font-size: 0.75rem;
+  font-weight: 650;
 }
 
 nav {
@@ -135,6 +162,10 @@ h1 {
 }
 
 .catalog-filters select {
+  cursor: pointer;
+}
+
+input[type="search"]::-webkit-search-cancel-button {
   cursor: pointer;
 }
 
@@ -621,6 +652,7 @@ a:focus-visible {
 
 .product-form__actions {
   justify-content: flex-end;
+  gap: 1.25rem;
 }
 
 .product-form__actions button {
@@ -992,10 +1024,15 @@ select option {
 }
 
 .footer-admin button {
+  cursor: pointer;
   min-height: 38px;
   padding: 0.4rem 0.7rem;
   background: transparent;
   color: inherit;
   border: 1px solid #aebcad;
   border-radius: 6px;
+}
+
+.footer-admin button:disabled {
+  cursor: wait;
 }

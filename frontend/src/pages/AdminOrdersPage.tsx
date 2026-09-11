@@ -46,7 +46,6 @@ export function AdminOrdersPage() {
     return (
       <section>
         <Link to="/admin/orders">← All orders</Link>
-        <p className="eyebrow">Admin</p>
         <h1>Order #{selected.id}</h1>
         <p>{new Date(selected.created_at).toLocaleString()}</p>
         <div className="checkout-card">
@@ -67,7 +66,7 @@ export function AdminOrdersPage() {
   return (
     <section>
       <div className="admin-heading">
-        <div><p className="eyebrow">Admin</p><h1>Orders</h1></div>
+        <h1>Orders</h1>
       </div>
       {orders.length === 0 ? (
         <p>No orders have been placed yet.</p>
