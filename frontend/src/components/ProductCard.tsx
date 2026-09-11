@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Link } from "react-router-dom";
 
 import type { Product } from "../api";
@@ -8,11 +9,11 @@ type ProductCardProps = {
   product: Product;
 };
 
-export function ProductCard({ product }: ProductCardProps) {
+export const ProductCard = memo(function ProductCard({ product }: ProductCardProps) {
   const inStock = product.available_quantity > 0;
 
   return (
-    <article className="product-card">
+    <Link className="product-card" to={`/products/${product.id}`}>
       <ProductImage
         className="product-card__image"
         src={product.image_url}
@@ -30,11 +31,11 @@ export function ProductCard({ product }: ProductCardProps) {
               {inStock ? `${product.available_quantity} available` : "Out of stock"}
             </span>
           </div>
-          <Link className="button-link button-link--small" to={`/products/${product.id}`}>
+          <span className="button-link button-link--small">
             View details
-          </Link>
+          </span>
         </div>
       </div>
-    </article>
+    </Link>
   );
-}
+});

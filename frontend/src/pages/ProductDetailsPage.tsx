@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { getApiError, getProduct } from "../api";
-import type { Product } from "../api";
+import { useQuery } from "@tanstack/react-query";
+import { PRODUCT_STALE_TIME } from "../queryClient";
 import { useCart } from "../cart";
 import { ProductImage } from "../components/ProductImage";
 import { formatPrice } from "../currency";
@@ -11,40 +12,20 @@ export function ProductDetailsPage() {
   const { addItem, ready: cartReady } = useCart();
   const productId = Number(useParams().productId);
   const validId = Number.isInteger(productId) && productId > 0;
-  const [result, setResult] = useState<{
-    productId: number;
-    product: Product | null;
-    failed: boolean;
-  } | null>(null);
+  const { data: product, isPending, isError } = useQuery({
+    queryKey: ["product", productId],
+    queryFn: ({ signal }) => getProduct(productId, signal),
+    enabled: validId,
+    staleTime: PRODUCT_STALE_TIME,
+  });
   const [quantity, setQuantity] = useState("1");
   const [adding, setAdding] = useState(false);
   const [cartMessage, setCartMessage] = useState("");
   const [cartError, setCartError] = useState("");
 
-  useEffect(() => {
-    if (!validId) return;
+  if (validId && isPending) return <p className="catalog-message" role="status">Loading product…</p>;
 
-    const controller = new AbortController();
-
-    getProduct(productId, controller.signal)
-      .then((product) => setResult({ productId, product, failed: false }))
-      .catch(() => {
-        if (!controller.signal.aborted) {
-          setResult({ productId, product: null, failed: true });
-        }
-      });
-
-    return () => controller.abort();
-  }, [productId, validId]);
-
-  const currentResult = result?.productId === productId ? result : null;
-  const loading = validId && currentResult === null;
-  const loadError = !validId || currentResult?.failed;
-  const product = currentResult?.product;
-
-  if (loading) return <p className="catalog-message" role="status">Loading product…</p>;
-
-  if (loadError || !product) {
+  if (!validId || isError || !product) {
     return (
       <section className="catalog-message catalog-message--error">
         <p>This product could not be found.</p>

@@ -194,3 +194,35 @@ async def test_admin_product_routes_require_authentication() -> None:
         response = await client.get("/api/v1/admin/products")
 
     assert response.status_code == 401
+
+
+async def test_admin_filters_apply_to_count_and_page_with_literal_search() -> None:
+    session = AsyncMock(spec=AsyncSession)
+    session.scalar.return_value = 23
+    session.scalars.return_value = [sample_product()]
+    response = await request_with_session(
+        session, "GET", "/api/v1/admin/products",
+        params={"search": "  50%_off  ", "category_id": 3, "page": 2, "page_size": 10},
+    )
+    assert response.status_code == 200
+    assert response.json()["total_pages"] == 3
+    assert response.json()["page"] == 2
+    count_query = session.scalar.call_args.args[0].compile()
+    page_query = session.scalars.call_args.args[0].compile()
+    for query in (count_query, page_query):
+        assert "%50\\%\\_off%" in query.params.values()
+        assert query.params["category_id_1"] == 3
+        assert "products.is_deleted IS false" in str(query)
+        assert "products.status =" not in str(query)
+    assert page_query.params["param_1"] == 10  # limit
+    assert page_query.params["param_2"] == 10  # offset
+
+
+async def test_admin_filters_reject_invalid_category_before_querying() -> None:
+    session = AsyncMock(spec=AsyncSession)
+    response = await request_with_session(
+        session, "GET", "/api/v1/admin/products", params={"category_id": 0},
+    )
+    assert response.status_code == 422
+    session.scalar.assert_not_called()
+    session.scalars.assert_not_called()

@@ -217,11 +217,12 @@ npm run lint
 npm run build
 ```
 
-The final automated run contains 44 passing backend tests. It covers protected
+The latest automated run contains 51 passing backend tests. It covers protected
 routes, refresh rotation and replay, cart ownership and CSRF, current-price
 totals, checkout snapshots, stale-price rejection, idempotent replay, mismatched
 idempotency use, and database constraints. Frontend lint, TypeScript compilation,
-and the Vite production build also pass.
+and the Vite production build also pass. The changed backend files pass Ruff;
+the full Ruff run reports an existing import-order issue in `tests/test_health.py`.
 
 Unexpected backend errors are logged with their request ID and returned as a
 generic HTTP 500 response. Validation errors and intentional HTTP errors retain
@@ -254,3 +255,45 @@ representative measurements show it is slow, evaluate PostgreSQL `pg_trgm` with
 a GIN trigram index and compare `EXPLAIN (ANALYZE, BUFFERS)`, latency, index size,
 and write cost before adopting it. The current catalog does not justify that
 operational complexity.
+
+
+## Catalog caching and rendering
+
+The public product list and detail pages use TanStack Query. Product results stay
+fresh for 30 seconds; categories stay fresh for 5 minutes. Query keys include the
+search text, category, page, and page size, or the product ID for details. Search
+is debounced by 300 ms; the public list keeps its filters in the URL so browser
+Back returns to the same query. Previous results remain visible during fetching.
+
+Successful product create/edit, stock/status changes, deletion, and checkout
+invalidate public list and detail queries. Active queries refetch; inactive ones
+refetch when used again. The cache lives in memory, is lost on reload, and does
+not synchronize between tabs or users. Expiry makes data stale, but does not
+start a polling timer: stale queries refetch on mount, window focus, or reconnect.
+Checkout always validates current stock and prices on the backend.
+
+`ProductCard` uses `memo` to skip parent-driven renders when its product prop is
+unchanged. Query structural sharing preserves unchanged JSON object references.
+Auth/cart actions use `useCallback`, and their context objects use `useMemo`.
+Consumers still rerender when the context data they subscribe to changes. These
+are targeted optimizations, not evidence of measured speedups; use the React
+Profiler before adding more. See the [TanStack Query defaults documentation](https://tanstack.com/query/latest/docs/framework/react/guides/important-defaults).
+
+Admin pages use `React.lazy` and an outlet-level `Suspense` boundary, so the shell
+stays visible while their code loads. The admin list has debounced name search,
+category filtering, and server pagination; inactive products remain manageable.
+Its existing direct request flow is retained. Private orders and auth responses
+are not placed in the product cache.
+
+## Admin access and feedback
+
+The footer keeps an Admin link for assessment reviewer convenience. `/admin`
+remains protected and redirects to admin login when required. Moving or hiding
+the link is a navigation decision, not an authorization measure. A production
+deployment could restrict the admin surface through separate network/access
+controls if its requirements justify that. Seed-account instructions belong in
+this README, not the login UI.
+
+Stock and status are edited only from the product table; the edit form omits
+them. The create form still accepts initial values. Product saves, stock saves,
+status changes, and deletion display inline success feedback.

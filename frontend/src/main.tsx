@@ -1,22 +1,29 @@
-import { StrictMode } from "react";
+import { lazy, StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "./queryClient";
 
 import { AppLayout } from "./AppLayout";
 import { AuthProvider, RequireAdmin } from "./auth";
 import { CartProvider } from "./cart";
-import { AdminPage } from "./pages/AdminPage";
-import { AdminOrdersPage } from "./pages/AdminOrdersPage";
-import { AdminProductFormPage } from "./pages/AdminProductFormPage";
 import { CartPage } from "./pages/CartPage";
 import { CheckoutPage } from "./pages/CheckoutPage";
 import { HomePage } from "./pages/HomePage";
 import { GuestOrdersPage } from "./pages/GuestOrdersPage";
-import { LoginPage } from "./pages/LoginPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { OrderConfirmationPage } from "./pages/OrderConfirmationPage";
 import { ProductDetailsPage } from "./pages/ProductDetailsPage";
 import "./styles.css";
+
+const AdminPage = lazy(() => import("./pages/AdminPage").then((module) => ({ default: module.AdminPage })));
+
+const AdminOrdersPage = lazy(() => import("./pages/AdminOrdersPage").then((module) => ({ default: module.AdminOrdersPage })));
+
+const AdminProductFormPage = lazy(() => import("./pages/AdminProductFormPage").then((module) => ({ default: module.AdminProductFormPage })));
+
+const LoginPage = lazy(() => import("./pages/LoginPage").then((module) => ({ default: module.LoginPage })));
 
 const router = createBrowserRouter([
   {
@@ -53,10 +60,12 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
   <StrictMode>
-    <AuthProvider>
-      <CartProvider>
-        <RouterProvider router={router} />
-      </CartProvider>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <CartProvider>
+          <RouterProvider router={router} />
+        </CartProvider>
+      </AuthProvider>
+    </QueryClientProvider>
   </StrictMode>,
 );

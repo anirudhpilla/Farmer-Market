@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Navigate, Outlet } from "react-router-dom";
 
 import {
@@ -45,22 +45,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => onAuthExpired(() => setUser(null)), []);
 
-  async function login(email: string, password: string) {
+  const login = useCallback(async (email: string, password: string) => {
     const result = await loginRequest(email, password);
     setUser(result.user);
-  }
+  }, []);
 
-  async function logout() {
+  const logout = useCallback(async () => {
     try {
       await logoutRequest();
     } finally {
       setAccessToken(null);
       setUser(null);
     }
-  }
+  }, []);
+
+  const value = useMemo(() => ({ user, loading, login, logout }), [user, loading, login, logout]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

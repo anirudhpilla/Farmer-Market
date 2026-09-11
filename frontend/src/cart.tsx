@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import {
   addCartItem,
@@ -46,25 +46,27 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  async function addItem(productId: number, quantity: number) {
+  const addItem = useCallback(async (productId: number, quantity: number) => {
     setCart(await addCartItem(productId, quantity));
-  }
+  }, []);
 
-  async function updateItem(itemId: number, quantity: number) {
+  const updateItem = useCallback(async (itemId: number, quantity: number) => {
     setCart(await updateCartItem(itemId, quantity));
-  }
+  }, []);
 
-  async function removeItem(itemId: number) {
+  const removeItem = useCallback(async (itemId: number) => {
     setCart(await removeCartItem(itemId));
-  }
+  }, []);
 
-  async function reloadCart() {
+  const reloadCart = useCallback(async () => {
     setCart(await getCart());
-  }
+  }, []);
+
+  const value = useMemo(() => ({ cart, ready, error, addItem, updateItem, removeItem, reloadCart }), [cart, ready, error, addItem, updateItem, removeItem, reloadCart]);
 
   return (
     <CartContext.Provider
-      value={{ cart, ready, error, addItem, updateItem, removeItem, reloadCart }}
+      value={value}
     >
       {children}
     </CartContext.Provider>

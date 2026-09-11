@@ -75,6 +75,11 @@ export function AdminProductFormPage() {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting) return;
+    const confirmation = editing
+      ? `Save changes to ${form.name}?`
+      : `Create ${form.name} as an ${form.status} product?`;
+    if (!window.confirm(confirmation)) return;
     setSubmitting(true);
     setError("");
 
@@ -102,7 +107,7 @@ export function AdminProductFormPage() {
       } else {
         await createAdminProduct(input);
       }
-      navigate("/admin", { replace: true });
+      navigate("/admin", { replace: true, state: { message: editing ? "Product saved." : "Product created." } });
     } catch (requestError) {
       setError(getApiError(requestError, "The product could not be saved."));
     } finally {
@@ -123,7 +128,7 @@ export function AdminProductFormPage() {
 
       <form className="product-form" onSubmit={submit}>
         <label>
-          <span>Name and sale unit *</span>
+          <span>Name and sale unit</span>
           <input
             value={form.name}
             minLength={2}
@@ -133,7 +138,7 @@ export function AdminProductFormPage() {
           />
         </label>
         <label>
-          <span>Category *</span>
+          <span>Category</span>
           <select
             value={form.categoryId}
             required
@@ -146,7 +151,7 @@ export function AdminProductFormPage() {
           </select>
         </label>
         <label>
-          <span>Farmer name *</span>
+          <span>Farmer name</span>
           <input
             value={form.farmerName}
             minLength={2}
@@ -156,7 +161,7 @@ export function AdminProductFormPage() {
           />
         </label>
         <label>
-          <span>Price (INR) *</span>
+          <span>Price (INR)</span>
           <input
             type="number"
             min="0.01"
@@ -167,7 +172,7 @@ export function AdminProductFormPage() {
           />
         </label>
         <label className="product-form__wide">
-          <span>Description *</span>
+          <span>Description</span>
           <textarea
             value={form.description}
             minLength={10}
@@ -177,7 +182,7 @@ export function AdminProductFormPage() {
           />
         </label>
         <label className="product-form__wide">
-          <span>Image URL *</span>
+          <span>Image URL</span>
           <input
             type="url"
             value={form.imageUrl}
@@ -186,6 +191,7 @@ export function AdminProductFormPage() {
             onChange={(event) => change("imageUrl", event.target.value)}
           />
         </label>
+        {!editing && (<>
         <label>
           <span>Available quantity</span>
           <input
@@ -193,24 +199,22 @@ export function AdminProductFormPage() {
             min="0"
             max="1000000"
             value={form.availableQuantity}
-            disabled={editing}
             required
             onChange={(event) => change("availableQuantity", event.target.value)}
           />
-          {editing && <small>Update stock from the product list.</small>}
         </label>
         <label>
           <span>Status</span>
           <select
             value={form.status}
-            disabled={editing}
             onChange={(event) => change("status", event.target.value)}
           >
             <option value="inactive">Inactive</option>
             <option value="active">Active</option>
           </select>
-          {editing && <small>Change status from the product list.</small>}
         </label>
+
+        </>)}
 
         {error && <p className="form-error product-form__wide" role="alert">{error}</p>}
         <div className="product-form__actions product-form__wide">

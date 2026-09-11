@@ -33,7 +33,7 @@ export function LoginPage() {
     <section className="auth-card">
       <p className="eyebrow">Administration</p>
       <h1>Admin sign in</h1>
-      <p>Use the administrator account created by the backend seed command.</p>
+      <p>Sign in to manage products and orders.</p>
 
       <form onSubmit={handleSubmit}>
         <label>

@@ -42,7 +42,7 @@ export function AdminOrdersPage() {
   if (loadedKey !== requestKey) return <p className="catalog-message">Loading orders…</p>;
   if (error) return <p className="catalog-message catalog-message--error">{error}</p>;
 
-  if (selected) {
+  if (detailRequested && selected) {
     return (
       <section>
         <Link to="/admin/orders">← All orders</Link>
@@ -68,7 +68,6 @@ export function AdminOrdersPage() {
     <section>
       <div className="admin-heading">
         <div><p className="eyebrow">Admin</p><h1>Orders</h1></div>
-        <Link to="/admin">Manage products</Link>
       </div>
       {orders.length === 0 ? (
         <p>No orders have been placed yet.</p>

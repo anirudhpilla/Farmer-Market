@@ -1,96 +1,72 @@
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useEffect, useState, useTransition } from "react";
+import { useSearchParams } from "react-router-dom";
+import { CATEGORY_STALE_TIME, PRODUCT_STALE_TIME } from "../queryClient";
+import { useDebouncedValue } from "../useDebouncedValue";
 
 import { getCategories, getProducts } from "../api";
-import type { Category, ProductPage } from "../api";
 import { ProductCard } from "../components/ProductCard";
 
 const PAGE_SIZE = 6;
 
 export function HomePage() {
-  const [search, setSearch] = useState("");
-  const [querySearch, setQuerySearch] = useState("");
-  const [categoryId, setCategoryId] = useState<number | undefined>();
-  const [page, setPage] = useState(1);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [products, setProducts] = useState<ProductPage | null>(null);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const [isFetching, setIsFetching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [params, setParams] = useSearchParams();
+  const search = params.get("search") ?? "";
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const categoryId = Number(params.get("category")) || undefined;
+  const requestedPage = Number(params.get("page"));
+  const page = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const [isTransitionPending, startTransition] = useTransition();
+  const [filters, setFilters] = useState({
+    search: debouncedSearch || undefined, categoryId, page, pageSize: PAGE_SIZE,
+  });
 
-  const [isPending, startTransition] = useTransition();
-
+  // Keep URL-controlled inputs immediate; apply the catalog query at lower priority.
   useEffect(() => {
-    const timeoutId = window.setTimeout(() => {
-      setQuerySearch(search.trim());
-      setPage(1);
-    }, 180);
-    return () => window.clearTimeout(timeoutId);
-  }, [search]);
+    startTransition(() => {
+      setFilters({ search: debouncedSearch || undefined, categoryId, page, pageSize: PAGE_SIZE });
+    });
+  }, [debouncedSearch, categoryId, page]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    getCategories(controller.signal)
-      .then((data) => {
-        if (data && data.length > 0) {
-          setCategories(data);
-        }
-      })
-      .catch(() => {
-        // Keep fallback categories if request fails
-      });
-    return () => controller.abort();
-  }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setIsFetching(true);
-
-    getProducts(
-      {
-        search: querySearch || undefined,
-        categoryId,
-        page,
-        pageSize: PAGE_SIZE,
-      },
-      controller.signal,
-    )
-      .then((result) => {
-        startTransition(() => {
-          setProducts(result);
-          setError(null);
-        });
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) {
-          startTransition(() => {
-            setProducts(null);
-            setError("We could not load products. Please try again.");
-          });
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setIsFetching(false);
-          setInitialLoading(false);
-        }
-      });
-
-    return () => controller.abort();
-  }, [categoryId, querySearch, page]);
-
-  const isTransitioning = isPending || isFetching;
+  function setFilter(key: string, value: string) {
+    setParams((current) => {
+      if (value) current.set(key, value);
+      else current.delete(key);
+      if (key !== "page") current.delete("page");
+      return current;
+    }, { replace: true });
+  }
+  const { data: categories = [], isError: categoryError } = useQuery({
+    queryKey: ["categories"],
+    queryFn: ({ signal }) => getCategories(signal),
+    staleTime: CATEGORY_STALE_TIME,
+  });
+  const { data: products, isPending: loading, isError: error, isFetching, isPlaceholderData } = useQuery({
+    queryKey: ["products", filters],
+    queryFn: ({ signal }) => getProducts(filters, signal),
+    staleTime: PRODUCT_STALE_TIME,
+    placeholderData: keepPreviousData,
+  });
+  // A transition tracks React rendering, not the HTTP request or debounce timer.
+  const updating = isTransitionPending || isFetching ||
+    search.trim() !== (filters.search ?? "") || categoryId !== filters.categoryId || page !== filters.page;
 
   return (
-    <section aria-label="Products catalog">
+    <section className="catalog-page" aria-labelledby="page-title">
+      <div className="catalog-heading">
+        <h1 id="page-title">Fresh from nearby farms.</h1>
+      </div>
+
       <div className="catalog-filters" aria-label="Product filters">
         <label>
           <span>Search products</span>
           <input
             type="search"
+            maxLength={100}
             value={search}
             placeholder="Try tomatoes or rice"
             onChange={(event) => {
-              setSearch(event.target.value);
+              setFilter("search", event.target.value);
             }}
           />
         </label>
@@ -99,9 +75,7 @@ export function HomePage() {
           <select
             value={categoryId ?? ""}
             onChange={(event) => {
-              const val = event.target.value ? Number(event.target.value) : undefined;
-              setCategoryId(val);
-              setPage(1);
+              setFilter("category", event.target.value);
             }}
           >
             <option value="">All categories</option>
@@ -114,19 +88,20 @@ export function HomePage() {
         </label>
       </div>
 
-      {initialLoading && <p className="catalog-message" role="status">Loading products…</p>}
-      {!initialLoading && error && <p className="catalog-message catalog-message--error">{error}</p>}
-      {!initialLoading && !error && products?.items.length === 0 && (
+      {categoryError && <p role="alert">Categories could not be loaded. You can still search products.</p>}
+      {!loading && updating && <p role="status">Updating products…</p>}
+      {loading && <p className="catalog-message" role="status">Loading products…</p>}
+      {!loading && error && <p className="catalog-message catalog-message--error" role="alert">Products could not be loaded. Please try again.</p>}
+      {!loading && !error && products?.items.length === 0 && (
         <p className="catalog-message">No products match these filters.</p>
       )}
 
-      {!initialLoading && !error && products && products.items.length > 0 && (
-        <div className={`catalog-content ${isTransitioning ? "catalog-content--pending" : ""}`}>
+      {!loading && !error && products && products.items.length > 0 && (
+        <div className="catalog-results" aria-busy={updating}>
           <div className="result-summary">
-            <span>{products.total} {products.total === 1 ? "product" : "products"}</span>
-            {isTransitioning && <span className="updating-badge">Updating…</span>}
+            {products.total} {products.total === 1 ? "product" : "products"}
           </div>
-          <div className="product-grid">
+          <div className="product-grid product-grid--scrollable">
             {products.items.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -134,9 +109,9 @@ export function HomePage() {
           <nav className="pagination" aria-label="Product pages">
             <button
               type="button"
-              disabled={products.page <= 1 || isTransitioning}
+              disabled={updating || isPlaceholderData || products.page <= 1}
               onClick={() => {
-                setPage((prev) => Math.max(1, prev - 1));
+                setFilter("page", String(page - 1));
               }}
             >
               Previous
@@ -144,9 +119,9 @@ export function HomePage() {
             <span>Page {products.page} of {products.total_pages}</span>
             <button
               type="button"
-              disabled={products.page >= products.total_pages || isTransitioning}
+              disabled={updating || isPlaceholderData || products.page >= products.total_pages}
               onClick={() => {
-                setPage((prev) => prev + 1);
+                setFilter("page", String(page + 1));
               }}
             >
               Next
@@ -157,4 +132,3 @@ export function HomePage() {
     </section>
   );
 }
-

@@ -1,20 +1,23 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { CATEGORY_STALE_TIME } from "../queryClient";
+import { useDebouncedValue } from "../useDebouncedValue";
+import { Link, useLocation } from "react-router-dom";
 
 import {
   deleteAdminProduct,
   getAdminProducts,
+  getCategories,
   getApiError,
   setAdminProductStatus,
   setAdminProductStock,
 } from "../api";
 import type { AdminProduct, AdminProductPage } from "../api";
-import { useAuth } from "../auth";
 import { formatPrice } from "../currency";
 
 type ProductRowProps = {
   product: AdminProduct;
-  onChanged: () => void;
+  onChanged: (message: string) => void;
   onError: (message: string) => void;
 };
 
@@ -22,12 +25,13 @@ function ProductRow({ product, onChanged, onError }: ProductRowProps) {
   const [stock, setStock] = useState(String(product.available_quantity));
   const [busy, setBusy] = useState(false);
 
-  async function run(action: () => Promise<unknown>) {
+  async function run(action: () => Promise<unknown>, message: string, confirmation: string) {
+    if (busy || !window.confirm(confirmation)) return;
     setBusy(true);
     onError("");
     try {
       await action();
-      onChanged();
+      onChanged(message);
     } catch (error) {
       onError(getApiError(error, "The product could not be updated."));
     } finally {
@@ -36,8 +40,11 @@ function ProductRow({ product, onChanged, onError }: ProductRowProps) {
   }
 
   function removeProduct() {
-    if (!window.confirm(`Delete ${product.name}? This hides it from normal lists.`)) return;
-    void run(() => deleteAdminProduct(product.id));
+    void run(
+      () => deleteAdminProduct(product.id),
+      `${product.name} deleted.`,
+      `Delete ${product.name}? This hides it from the catalog and admin product list.`,
+    );
   }
 
   return (
@@ -65,7 +72,11 @@ function ProductRow({ product, onChanged, onError }: ProductRowProps) {
             type="button"
             disabled={busy || stock === "" || !Number.isInteger(Number(stock)) || Number(stock) < 0}
             onClick={() =>
-              void run(() => setAdminProductStock(product.id, Number(stock), product.version))
+              void run(
+                () => setAdminProductStock(product.id, Number(stock), product.version),
+                `Stock saved for ${product.name}.`,
+                `Change stock for ${product.name} from ${product.available_quantity} to ${Number(stock)}?`,
+              )
             }
           >
             Save
@@ -84,6 +95,10 @@ function ProductRow({ product, onChanged, onError }: ProductRowProps) {
                   product.id,
                   product.status === "active" ? "inactive" : "active",
                 ),
+                `${product.name} ${product.status === "active" ? "deactivated" : "activated"}.`,
+                product.status === "active"
+                  ? `Deactivate ${product.name}? Customers will no longer see it in the catalog.`
+                  : `Activate ${product.name}? It will be visible to customers.`,
               )
             }
           >
@@ -99,7 +114,16 @@ function ProductRow({ product, onChanged, onError }: ProductRowProps) {
 }
 
 export function AdminPage() {
-  const { user, logout } = useAuth();
+  const location = useLocation();
+  const [message, setMessage] = useState<string>(location.state?.message ?? "");
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const [categoryId, setCategoryId] = useState<number | undefined>();
+  const { data: categories = [], isError: categoryError } = useQuery({
+    queryKey: ["categories"],
+    queryFn: ({ signal }) => getCategories(signal),
+    staleTime: CATEGORY_STALE_TIME,
+  });
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
   const [products, setProducts] = useState<AdminProductPage | null>(null);
@@ -107,10 +131,9 @@ export function AdminPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    getAdminProducts(page, controller.signal)
+    getAdminProducts({ page, pageSize: 20, search: debouncedSearch || undefined, categoryId }, controller.signal)
       .then((result) => {
         setProducts(result);
-        setError("");
       })
       .catch((requestError) => {
         if (!controller.signal.aborted) {
@@ -118,9 +141,11 @@ export function AdminPage() {
         }
       });
     return () => controller.abort();
-  }, [page, reloadKey]);
+  }, [page, reloadKey, debouncedSearch, categoryId]);
 
-  function reloadProducts() {
+  function reloadProducts(success: string) {
+    setMessage(success);
+    setPage(1);
     setReloadKey((current) => current + 1);
   }
 
@@ -130,17 +155,32 @@ export function AdminPage() {
         <div>
           <p className="eyebrow">Administration</p>
           <h1>Products</h1>
-          <p>Signed in as {user?.email}</p>
         </div>
         <div className="admin-heading__actions">
           <Link className="button-link" to="/admin/products/new">Add product</Link>
-          <button type="button" onClick={() => void logout()}>Sign out</button>
         </div>
       </div>
 
+      <div className="catalog-filters" aria-label="Admin product filters">
+        <label>
+          <span>Search products</span>
+          <input type="search" maxLength={100} value={search} placeholder="Search by name"
+            onChange={(event) => { setSearch(event.target.value); setPage(1); }} />
+        </label>
+        <label>
+          <span>Category</span>
+          <select value={categoryId ?? ""}
+            onChange={(event) => { setCategoryId(Number(event.target.value) || undefined); setPage(1); }}>
+            <option value="">All categories</option>
+            {categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+          </select>
+        </label>
+      </div>
+      {categoryError && <p role="alert">Categories could not be loaded.</p>}
+      {message && <p className="cart-success" role="status">{message}</p>}
       {error && <p className="catalog-message catalog-message--error" role="alert">{error}</p>}
       {!products && !error && <p className="catalog-message">Loading products…</p>}
-      {products?.items.length === 0 && <p className="catalog-message">No products yet.</p>}
+      {products?.items.length === 0 && <p className="catalog-message">No products match these filters.</p>}
 
       {products && products.items.length > 0 && (
         <>
@@ -162,7 +202,7 @@ export function AdminPage() {
                     key={`${product.id}-${product.version}`}
                     product={product}
                     onChanged={reloadProducts}
-                    onError={setError}
+                    onError={(text) => { setError(text); setMessage(""); if (text) setReloadKey((current) => current + 1); }}
                   />
                 ))}
               </tbody>

@@ -1,3 +1,4 @@
+import { invalidateProducts } from "./queryClient";
 import axios from "axios";
 import type { AxiosError, InternalAxiosRequestConfig } from "axios";
 
@@ -266,12 +267,12 @@ export async function getProduct(
 }
 
 export async function getAdminProducts(
-  page: number,
+  filters: ProductFilters,
   signal?: AbortSignal,
 ): Promise<AdminProductPage> {
   const response = await api.get<AdminProductPage>("/admin/products", {
     signal,
-    params: { page, page_size: 20 },
+    params: { page: filters.page, page_size: filters.pageSize, search: filters.search, category_id: filters.categoryId },
   });
   return response.data;
 }
@@ -286,6 +287,7 @@ export async function getAdminProduct(
 
 export async function createAdminProduct(body: ProductInput): Promise<AdminProduct> {
   const response = await api.post<AdminProduct>("/admin/products", body);
+  invalidateProducts();
   return response.data;
 }
 
@@ -294,6 +296,7 @@ export async function editAdminProduct(
   body: ProductEditInput,
 ): Promise<AdminProduct> {
   const response = await api.patch<AdminProduct>(`/admin/products/${productId}`, body);
+  invalidateProducts();
   return response.data;
 }
 
@@ -302,6 +305,7 @@ export async function setAdminProductStatus(
   status: "active" | "inactive",
 ): Promise<AdminProduct> {
   const response = await api.patch<AdminProduct>(`/admin/products/${productId}/status`, { status });
+  invalidateProducts();
   return response.data;
 }
 
@@ -314,11 +318,13 @@ export async function setAdminProductStock(
     available_quantity: availableQuantity,
     expected_version: expectedVersion,
   });
+  invalidateProducts();
   return response.data;
 }
 
 export async function deleteAdminProduct(productId: number): Promise<void> {
   await api.delete(`/admin/products/${productId}`);
+  invalidateProducts();
 }
 
 export function ensureGuestSession(): Promise<void> {
@@ -376,6 +382,7 @@ export async function checkoutCart(cart: Cart, idempotencyKey: string): Promise<
     },
     { headers: { ...guestCsrfHeader(), "Idempotency-Key": idempotencyKey } },
   );
+  invalidateProducts();
   return response.data;
 }
 

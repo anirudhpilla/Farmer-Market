@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.api.auth import get_current_admin
+from app.api.catalog import escape_like_term
 from app.database import get_db_session
 from app.models import Category, Product, ProductStatus, User
 from app.schemas import (
@@ -57,17 +58,25 @@ async def find_category(session: AsyncSession, category_id: int) -> Category:
 async def list_admin_products(
     session: DatabaseSession,
     _admin: CurrentAdmin,
+    search: Annotated[str | None, Query(min_length=1, max_length=100)] = None,
+    category_id: Annotated[int | None, Query(ge=1)] = None,
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=50)] = 20,
 ) -> AdminProductPage:
-    visible = Product.is_deleted.is_(False)
-    total = await session.scalar(select(func.count()).select_from(Product).where(visible))
+    filters = [Product.is_deleted.is_(False)]
+    if search and search.strip():
+        term = escape_like_term(search.strip())
+        filters.append(Product.name.ilike(f"%{term}%", escape="\\"))
+    if category_id is not None:
+        filters.append(Product.category_id == category_id)
+
+    total = await session.scalar(select(func.count()).select_from(Product).where(*filters))
     total = total or 0
 
     query = (
         select(Product)
         .options(joinedload(Product.category))
-        .where(visible)
+        .where(*filters)
         .order_by(Product.name, Product.id)
         .offset((page - 1) * page_size)
         .limit(page_size)

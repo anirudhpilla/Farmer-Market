@@ -18,7 +18,8 @@ export function CheckoutPage() {
   const hasIssues = cart.items.some((item) => item.issue !== null);
 
   async function placeOrder() {
-    if (!cart || hasIssues) return;
+    if (!cart || hasIssues || submitting) return;
+    if (!window.confirm(`Place this order for ${formatPrice(cart.grand_total)}? Stock and prices will be checked before confirmation.`)) return;
     setSubmitting(true);
     setError("");
     try {
