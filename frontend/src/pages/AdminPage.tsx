@@ -131,7 +131,7 @@ export function AdminPage() {
 
   useEffect(() => {
     const controller = new AbortController();
-    getAdminProducts({ page, pageSize: 25, search: debouncedSearch || undefined, categoryId }, controller.signal)
+    getAdminProducts({ page, pageSize: 10, search: debouncedSearch || undefined, categoryId }, controller.signal)
       .then((result) => {
         setProducts(result);
       })
