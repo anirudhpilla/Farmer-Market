@@ -5,11 +5,13 @@ import { getApiError, getProduct } from "../api";
 import { useQuery } from "@tanstack/react-query";
 import { PRODUCT_STALE_TIME } from "../queryClient";
 import { useCart } from "../cart";
+import { useAuth } from "../auth";
 import { ProductImage } from "../components/ProductImage";
 import { formatPrice } from "../currency";
 
 export function ProductDetailsPage() {
   const { addItem, ready: cartReady } = useCart();
+  const { user } = useAuth();
   const productId = Number(useParams().productId);
   const validId = Number.isInteger(productId) && productId > 0;
   const { data: product, isPending, isError } = useQuery({
@@ -69,7 +71,7 @@ export function ProductDetailsPage() {
         <span className={inStock ? "stock stock--available" : "stock stock--empty"}>
           {inStock ? `${product.available_quantity} available` : "Currently out of stock"}
         </span>
-        <div className="add-to-cart">
+        {!user && (<div className="add-to-cart">
           <label>
             <span>Quantity</span>
             <input
@@ -93,7 +95,7 @@ export function ProductDetailsPage() {
           >
             {adding ? "Adding…" : "Add to cart"}
           </button>
-        </div>
+        </div>)}
         {cartMessage && <p className="cart-success" role="status">{cartMessage}</p>}
         {cartError && <p className="form-error" role="alert">{cartError}</p>}
       </div>
