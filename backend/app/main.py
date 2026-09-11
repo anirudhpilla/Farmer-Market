@@ -86,9 +86,9 @@ async def unexpected_error(request: Request, error: Exception) -> JSONResponse:
     )
 
 
-app.include_router(catalog_router, prefix=settings.api_v1_prefix)
 app.include_router(auth_router, prefix=settings.api_v1_prefix)
 app.include_router(admin_products_router, prefix=settings.api_v1_prefix)
+app.include_router(catalog_router, prefix=settings.api_v1_prefix)
 app.include_router(guest_router, prefix=settings.api_v1_prefix)
 app.include_router(cart_router, prefix=settings.api_v1_prefix)
 app.include_router(orders_router, prefix=settings.api_v1_prefix)

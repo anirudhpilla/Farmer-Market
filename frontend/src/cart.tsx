@@ -8,6 +8,7 @@ import {
   updateCartItem,
 } from "./api";
 import type { Cart } from "./api";
+import { useAuth } from "./auth";
 
 type CartContextValue = {
   cart: Cart | null;
@@ -16,23 +17,29 @@ type CartContextValue = {
   addItem: (productId: number, quantity: number) => Promise<void>;
   updateItem: (itemId: number, quantity: number) => Promise<void>;
   removeItem: (itemId: number) => Promise<void>;
-  reloadCart: () => Promise<void>;
+  reloadCart: () => Promise<Cart>;
 };
 
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { user, loading: authLoading } = useAuth();
   const [cart, setCart] = useState<Cart | null>(null);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // Wait for refresh to finish: user is temporarily null during admin restoration.
+    if (authLoading || user) return;
     let active = true;
 
     ensureGuestSession()
-      .then(() => getCart())
+      .then(() => active ? getCart() : null)
       .then((result) => {
-        if (active) setCart(result);
+        if (active) {
+          setCart(result);
+          setError("");
+        }
       })
       .catch(() => {
         if (active) setError("The shopping cart could not be loaded.");
@@ -44,11 +51,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [authLoading, user]);
 
   const addItem = useCallback(async (productId: number, quantity: number) => {
+    // Admins can still shop deliberately; create/reuse a guest session only then.
+    if (user) await ensureGuestSession();
     setCart(await addCartItem(productId, quantity));
-  }, []);
+  }, [user]);
 
   const updateItem = useCallback(async (itemId: number, quantity: number) => {
     setCart(await updateCartItem(itemId, quantity));
@@ -59,10 +68,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const reloadCart = useCallback(async () => {
-    setCart(await getCart());
+    const result = await getCart();
+    setCart(result);
+    return result;
   }, []);
 
-  const value = useMemo(() => ({ cart, ready, error, addItem, updateItem, removeItem, reloadCart }), [cart, ready, error, addItem, updateItem, removeItem, reloadCart]);
+  const cartReady = !authLoading && (Boolean(user) || ready);
+  const value = useMemo(() => ({ cart, ready: cartReady, error, addItem, updateItem, removeItem, reloadCart }), [cart, cartReady, error, addItem, updateItem, removeItem, reloadCart]);
 
   return (
     <CartContext.Provider

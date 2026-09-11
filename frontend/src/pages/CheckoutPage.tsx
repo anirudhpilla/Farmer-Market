@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import axios from "axios";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 
 import { checkoutCart, getApiError } from "../api";
@@ -28,6 +29,14 @@ export function CheckoutPage() {
       navigate(`/orders/${order.id}`, { replace: true });
     } catch (requestError) {
       setError(getApiError(requestError, "The order could not be placed."));
+      if (axios.isAxiosError(requestError) && requestError.response?.status === 409) {
+        try {
+          await reloadCart();
+          setError(`${getApiError(requestError, "The cart changed.")} Return to the cart and click Update to review current quantities and prices.`);
+        } catch {
+          setError("The cart changed, but its latest details could not be loaded. Return to the cart and try Update again.");
+        }
+      }
     } finally {
       setSubmitting(false);
     }

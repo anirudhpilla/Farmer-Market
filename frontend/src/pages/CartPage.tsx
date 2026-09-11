@@ -1,8 +1,9 @@
 import { useState } from "react";
+import axios from "axios";
 import { Link } from "react-router-dom";
 
 import { getApiError } from "../api";
-import type { CartItem } from "../api";
+import type { Cart, CartItem } from "../api";
 import { useCart } from "../cart";
 import { ProductImage } from "../components/ProductImage";
 import { formatPrice } from "../currency";
@@ -11,23 +12,51 @@ type CartRowProps = {
   item: CartItem;
   updateItem: (itemId: number, quantity: number) => Promise<void>;
   removeItem: (itemId: number) => Promise<void>;
+  reloadCart: () => Promise<Cart>;
+  onFeedback: (feedback: { message: string; error: boolean }) => void;
+  busy: boolean;
+  onBusyChange: (busy: boolean) => void;
 };
 
-function CartRow({ item, updateItem, removeItem }: CartRowProps) {
+function CartRow({ item, updateItem, removeItem, reloadCart, onFeedback, busy, onBusyChange }: CartRowProps) {
   const [quantity, setQuantity] = useState(String(item.quantity));
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
 
   async function run(action: () => Promise<void>) {
-    setBusy(true);
-    setError("");
+    if (busy) return;
+    onBusyChange(true);
+    onFeedback({ message: "", error: false });
     try {
       await action();
     } catch (requestError) {
-      setError(getApiError(requestError, "The cart could not be updated."));
+      onFeedback({ message: getApiError(requestError, "The cart could not be updated. Please try again."), error: true });
     } finally {
-      setBusy(false);
+      onBusyChange(false);
     }
+  }
+
+  async function saveQuantity() {
+    const requested = Number(quantity);
+    let accepted = Math.min(requested, item.available_quantity);
+    try {
+      await updateItem(item.id, accepted);
+    } catch (requestError) {
+      if (!axios.isAxiosError(requestError) || requestError.response?.status !== 409) throw requestError;
+
+      const latestCart = await reloadCart();
+      const latestItem = latestCart.items.find((line) => line.id === item.id);
+      if (!latestItem || latestItem.issue === "unavailable" || latestItem.available_quantity <= 0 || accepted <= latestItem.available_quantity) {
+        throw requestError;
+      }
+      accepted = latestItem.available_quantity;
+      await updateItem(item.id, accepted);
+    }
+    setQuantity(String(accepted));
+    onFeedback({
+      message: accepted < requested
+        ? `Only ${accepted} units of ${item.name} are available. Quantity reduced to ${accepted} and totals updated.`
+        : `${item.name} updated with the current price.`,
+      error: false,
+    });
   }
 
   const validQuantity = Number.isInteger(Number(quantity)) && Number(quantity) > 0;
@@ -42,7 +71,6 @@ function CartRow({ item, updateItem, removeItem }: CartRowProps) {
         {item.issue === "insufficient_stock" && (
           <span className="form-error">Only {item.available_quantity} currently available</span>
         )}
-        {error && <span className="form-error" role="alert">{error}</span>}
       </div>
       <div className="cart-row__quantity">
         <label>
@@ -50,16 +78,16 @@ function CartRow({ item, updateItem, removeItem }: CartRowProps) {
           <input
             type="number"
             min="1"
-            max="1000000"
+            max={item.available_quantity}
             value={quantity}
-            disabled={busy || item.issue === "unavailable"}
+            disabled={busy || item.issue === "unavailable" || item.available_quantity === 0}
             onChange={(event) => setQuantity(event.target.value)}
           />
         </label>
         <button
           type="button"
-          disabled={busy || !validQuantity || Number(quantity) === item.quantity}
-          onClick={() => void run(() => updateItem(item.id, Number(quantity)))}
+          disabled={busy || !validQuantity || item.issue === "unavailable" || item.available_quantity === 0}
+          onClick={() => void run(saveQuantity)}
         >
           Update
         </button>
@@ -73,7 +101,9 @@ function CartRow({ item, updateItem, removeItem }: CartRowProps) {
 }
 
 export function CartPage() {
-  const { cart, ready, error, updateItem, removeItem } = useCart();
+  const { cart, ready, error, updateItem, removeItem, reloadCart } = useCart();
+  const [feedback, setFeedback] = useState({ message: "", error: false });
+  const [busy, setBusy] = useState(false);
 
   if (!ready) return <p className="catalog-message">Loading cart…</p>;
   if (error) return <p className="catalog-message catalog-message--error">{error}</p>;
@@ -91,14 +121,23 @@ export function CartPage() {
   return (
     <section className="cart-page">
       <h1>Shopping cart</h1>
+      {feedback.message && (
+        <p className={feedback.error ? "form-error" : "cart-success"} role={feedback.error ? "alert" : "status"}>
+          {feedback.message}
+        </p>
+      )}
       <div className="cart-layout">
         <div className="cart-items">
           {cart.items.map((item) => (
             <CartRow
-              key={`${item.id}-${item.quantity}-${item.issue}`}
+              key={`${item.id}-${item.quantity}-${item.issue}-${item.available_quantity}-${item.unit_price}`}
               item={item}
               updateItem={updateItem}
               removeItem={removeItem}
+              reloadCart={reloadCart}
+              onFeedback={setFeedback}
+              busy={busy}
+              onBusyChange={setBusy}
             />
           ))}
         </div>
@@ -110,11 +149,11 @@ export function CartPage() {
           </div>
           {hasIssues && <p className="form-error">Resolve unavailable or low-stock items first.</p>}
           <Link
-            className={`button-link${hasIssues ? " button-link--disabled" : ""}`}
-            to={hasIssues ? "/cart" : "/checkout"}
-            aria-disabled={hasIssues}
+            className={`button-link${hasIssues || busy ? " button-link--disabled" : ""}`}
+            to={hasIssues || busy ? "/cart" : "/checkout"}
+            aria-disabled={hasIssues || busy}
             onClick={(event) => {
-              if (hasIssues) event.preventDefault();
+              if (hasIssues || busy) event.preventDefault();
             }}
           >
             Review checkout
