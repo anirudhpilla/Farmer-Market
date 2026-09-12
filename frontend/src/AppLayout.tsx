@@ -1,11 +1,12 @@
 import { Suspense, useState } from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { useAuth } from "./auth";
 import { useCart } from "./cart";
 import { getApiError } from "./api";
 
 export function AppLayout() {
+  const { pathname } = useLocation();
   const { user, logout } = useAuth();
   const { cart } = useCart();
   const [signingOut, setSigningOut] = useState(false);
@@ -41,7 +42,19 @@ export function AppLayout() {
           </div>
           <nav aria-label="Main navigation">
             <NavLink to="/">Products</NavLink>
-            {user && <NavLink to="/admin" end>Manage products</NavLink>}
+            {user && (
+              <NavLink
+                to="/admin"
+                end
+                className={({ isActive }) =>
+                  isActive || pathname.startsWith("/admin/products/")
+                    ? "active"
+                    : undefined
+                }
+              >
+                Manage products
+              </NavLink>
+            )}
             <NavLink to={user ? "/admin/orders" : "/orders"}>Orders</NavLink>
             {!user && <NavLink to="/cart">Cart ({cart?.item_count ?? 0})</NavLink>}
           </nav>

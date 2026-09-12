@@ -53,7 +53,7 @@ PRODUCTS = [
         "description": "Firm red onions suitable for everyday Indian cooking.",
         "price": Decimal("58.00"),
         "available_quantity": 32,
-        "image_url": "https://images.unsplash.com/photo-1508747703725-719777637510",
+        "image_url": "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb",
     },
     {
         "name": "Spinach — 1 bunch",
@@ -73,7 +73,6 @@ PRODUCTS = [
         "available_quantity": 35,
         "image_url": "https://images.unsplash.com/photo-1546094096-0df4bcaaa337",
     },
-    # Additional demo products use labeled placeholder images.
     {
         "name": "Apples — 1 kg pack",
         "category": "Fruits",
@@ -81,7 +80,7 @@ PRODUCTS = [
         "description": "Apples, sold as 1 kg pack for everyday cooking and meals.",
         "price": Decimal("180.00"),
         "available_quantity": 28,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Apples",
+        "image_url": "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6",
     },
     {
         "name": "Oranges — 1 kg pack",
@@ -90,7 +89,7 @@ PRODUCTS = [
         "description": "Oranges, sold as 1 kg pack for everyday cooking and meals.",
         "price": Decimal("95.00"),
         "available_quantity": 36,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Oranges",
+        "image_url": "https://images.unsplash.com/photo-1547514701-42782101795e",
     },
     {
         "name": "Guavas — 1 kg pack",
@@ -99,7 +98,7 @@ PRODUCTS = [
         "description": "Guavas, sold as 1 kg pack for everyday cooking and meals.",
         "price": Decimal("80.00"),
         "available_quantity": 20,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Guavas",
+        "image_url": "https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?auto=format&fit=crop&w=640&q=80",
     },
     {
         "name": "Pomegranates — 500 g pack",
@@ -108,7 +107,7 @@ PRODUCTS = [
         "description": "Pomegranates, sold as 500 g pack for everyday cooking and meals.",
         "price": Decimal("120.00"),
         "available_quantity": 17,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Pomegranates",
+        "image_url": "https://images.unsplash.com/photo-1615485925763-867862f80a3a",
     },
     {
         "name": "Papaya — 1 piece",
@@ -117,7 +116,7 @@ PRODUCTS = [
         "description": "Papaya, sold as 1 piece for everyday cooking and meals.",
         "price": Decimal("60.00"),
         "available_quantity": 12,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Papaya",
+        "image_url": "https://images.unsplash.com/photo-1517260739337-6799d2ffdeee",
     },
     {
         "name": "Watermelon — 1 piece",
@@ -126,7 +125,7 @@ PRODUCTS = [
         "description": "Watermelon, sold as 1 piece for everyday cooking and meals.",
         "price": Decimal("110.00"),
         "available_quantity": 9,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Watermelon",
+        "image_url": "https://images.unsplash.com/photo-1563283553-6c6c728f4e8e",
     },
     {
         "name": "Pineapple — 1 piece",
@@ -135,7 +134,7 @@ PRODUCTS = [
         "description": "Pineapple, sold as 1 piece for everyday cooking and meals.",
         "price": Decimal("85.00"),
         "available_quantity": 15,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Pineapple",
+        "image_url": "https://images.unsplash.com/photo-1550258987-190a2d41a8ba",
     },
     {
         "name": "Green Grapes — 500 g pack",
@@ -144,7 +143,7 @@ PRODUCTS = [
         "description": "Green Grapes, sold as 500 g pack for everyday cooking and meals.",
         "price": Decimal("70.00"),
         "available_quantity": 24,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Green%20Grapes",
+        "image_url": "https://images.unsplash.com/photo-1537640538965-1756e026e540",
     },
     {
         "name": "Black Grapes — 500 g pack",
@@ -153,7 +152,7 @@ PRODUCTS = [
         "description": "Black Grapes, sold as 500 g pack for everyday cooking and meals.",
         "price": Decimal("90.00"),
         "available_quantity": 18,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Black%20Grapes",
+        "image_url": "https://images.unsplash.com/photo-1537640538965-1756e026e540?auto=format&fit=crop&w=640&q=80",
     },
     {
         "name": "Sweet Lime — 1 kg pack",
@@ -162,8 +161,9 @@ PRODUCTS = [
         "description": "Sweet Lime, sold as 1 kg pack for everyday cooking and meals.",
         "price": Decimal("100.00"),
         "available_quantity": 22,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Sweet%20Lime",
+        "image_url": "https://images.unsplash.com/photo-1582281298055-e25b84a30b0b",
     },
+    # Keep some placeholders intentionally
     {
         "name": "Chikoo — 500 g pack",
         "category": "Fruits",
@@ -182,6 +182,7 @@ PRODUCTS = [
         "available_quantity": 0,
         "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Dragon%20Fruit",
     },
+    # Grains
     {
         "name": "Basmati Rice — 1 kg pack",
         "category": "Grains",
@@ -189,7 +190,7 @@ PRODUCTS = [
         "description": "Basmati Rice, sold as 1 kg pack for everyday cooking and meals.",
         "price": Decimal("160.00"),
         "available_quantity": 40,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Basmati%20Rice",
+        "image_url": "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=640&q=80",
     },
     {
         "name": "Whole Wheat — 1 kg pack",
@@ -198,7 +199,7 @@ PRODUCTS = [
         "description": "Whole Wheat, sold as 1 kg pack for everyday cooking and meals.",
         "price": Decimal("48.00"),
         "available_quantity": 60,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Whole%20Wheat",
+        "image_url": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b",
     },
     {
         "name": "Ragi — 1 kg pack",
@@ -207,7 +208,7 @@ PRODUCTS = [
         "description": "Ragi, sold as 1 kg pack for everyday cooking and meals.",
         "price": Decimal("75.00"),
         "available_quantity": 30,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Ragi",
+        "image_url": "https://images.unsplash.com/photo-1627485937980-221c88ac04f9",
     },
     {
         "name": "Jowar — 1 kg pack",
@@ -216,7 +217,7 @@ PRODUCTS = [
         "description": "Jowar, sold as 1 kg pack for everyday cooking and meals.",
         "price": Decimal("65.00"),
         "available_quantity": 28,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Jowar",
+        "image_url": "https://images.unsplash.com/photo-1627485937980-221c88ac04f9?auto=format&fit=crop&w=640&q=80",
     },
     {
         "name": "Bajra — 1 kg pack",
@@ -225,8 +226,9 @@ PRODUCTS = [
         "description": "Bajra, sold as 1 kg pack for everyday cooking and meals.",
         "price": Decimal("58.00"),
         "available_quantity": 32,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Bajra",
+        "image_url": "https://images.unsplash.com/photo-1627485937980-221c88ac04f9?auto=format&fit=crop&w=640&q=80",
     },
+    # Keep some grain placeholders
     {
         "name": "Foxtail Millet — 500 g pack",
         "category": "Grains",
@@ -252,7 +254,7 @@ PRODUCTS = [
         "description": "Barley, sold as 1 kg pack for everyday cooking and meals.",
         "price": Decimal("70.00"),
         "available_quantity": 14,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Barley",
+        "image_url": "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?auto=format&fit=crop&w=640&q=80",
     },
     {
         "name": "Rolled Oats — 500 g pack",
@@ -261,7 +263,7 @@ PRODUCTS = [
         "description": "Rolled Oats, sold as 500 g pack for everyday cooking and meals.",
         "price": Decimal("95.00"),
         "available_quantity": 26,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Rolled%20Oats",
+        "image_url": "https://images.unsplash.com/photo-1517646331032-9e8563c523a1",
     },
     {
         "name": "Red Rice — 1 kg pack",
@@ -270,8 +272,9 @@ PRODUCTS = [
         "description": "Red Rice, sold as 1 kg pack for everyday cooking and meals.",
         "price": Decimal("125.00"),
         "available_quantity": 18,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Red%20Rice",
+        "image_url": "https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=640&q=80",
     },
+    # Herbs
     {
         "name": "Mint — 1 bunch",
         "category": "Herbs",
@@ -279,7 +282,7 @@ PRODUCTS = [
         "description": "Mint, sold as 1 bunch for everyday cooking and meals.",
         "price": Decimal("20.00"),
         "available_quantity": 25,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Mint",
+        "image_url": "https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?auto=format&fit=crop&w=640&q=80",
     },
     {
         "name": "Curry Leaves — 100 g pack",
@@ -288,7 +291,7 @@ PRODUCTS = [
         "description": "Curry Leaves, sold as 100 g pack for everyday cooking and meals.",
         "price": Decimal("15.00"),
         "available_quantity": 30,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Curry%20Leaves",
+        "image_url": "https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?auto=format&fit=crop&w=640&q=80",
     },
     {
         "name": "Basil — 1 bunch",
@@ -297,8 +300,9 @@ PRODUCTS = [
         "description": "Basil, sold as 1 bunch for everyday cooking and meals.",
         "price": Decimal("45.00"),
         "available_quantity": 12,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Basil",
+        "image_url": "https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?auto=format&fit=crop&w=640&q=80",
     },
+    # Keep some herb placeholders
     {
         "name": "Dill — 1 bunch",
         "category": "Herbs",
@@ -324,7 +328,7 @@ PRODUCTS = [
         "description": "Lemongrass, sold as 100 g pack for everyday cooking and meals.",
         "price": Decimal("35.00"),
         "available_quantity": 15,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Lemongrass",
+        "image_url": "https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?auto=format&fit=crop&w=640&q=80",
     },
     {
         "name": "Fenugreek Leaves — 1 bunch",
@@ -333,7 +337,7 @@ PRODUCTS = [
         "description": "Fenugreek Leaves, sold as 1 bunch for everyday cooking and meals.",
         "price": Decimal("25.00"),
         "available_quantity": 20,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Fenugreek%20Leaves",
+        "image_url": "https://images.unsplash.com/photo-1601493700631-2b16ec4b4716?auto=format&fit=crop&w=640&q=80",
     },
     {
         "name": "Rosemary — 50 g pack",
@@ -344,6 +348,7 @@ PRODUCTS = [
         "available_quantity": 0,
         "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Rosemary",
     },
+    # Vegetables
     {
         "name": "Potatoes — 1 kg pack",
         "category": "Vegetables",
@@ -351,7 +356,7 @@ PRODUCTS = [
         "description": "Potatoes, sold as 1 kg pack for everyday cooking and meals.",
         "price": Decimal("40.00"),
         "available_quantity": 55,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Potatoes",
+        "image_url": "https://images.unsplash.com/photo-1518977676601-b53f82aba655",
     },
     {
         "name": "Carrots — 500 g pack",
@@ -360,7 +365,7 @@ PRODUCTS = [
         "description": "Carrots, sold as 500 g pack for everyday cooking and meals.",
         "price": Decimal("35.00"),
         "available_quantity": 30,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Carrots",
+        "image_url": "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37",
     },
     {
         "name": "Beetroot — 500 g pack",
@@ -369,7 +374,7 @@ PRODUCTS = [
         "description": "Beetroot, sold as 500 g pack for everyday cooking and meals.",
         "price": Decimal("30.00"),
         "available_quantity": 23,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Beetroot",
+        "image_url": "https://images.unsplash.com/photo-1590422749830-5b758503b5f0",
     },
     {
         "name": "Cabbage — 1 piece",
@@ -378,7 +383,7 @@ PRODUCTS = [
         "description": "Cabbage, sold as 1 piece for everyday cooking and meals.",
         "price": Decimal("45.00"),
         "available_quantity": 18,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Cabbage",
+        "image_url": "https://images.unsplash.com/photo-1550989460-0adf9ea622e2",
     },
     {
         "name": "Cauliflower — 1 piece",
@@ -387,7 +392,7 @@ PRODUCTS = [
         "description": "Cauliflower, sold as 1 piece for everyday cooking and meals.",
         "price": Decimal("55.00"),
         "available_quantity": 16,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Cauliflower",
+        "image_url": "https://images.unsplash.com/photo-1568515045052-f9a854d70bfd",
     },
     {
         "name": "Green Peas — 500 g pack",
@@ -396,7 +401,7 @@ PRODUCTS = [
         "description": "Green Peas, sold as 500 g pack for everyday cooking and meals.",
         "price": Decimal("65.00"),
         "available_quantity": 22,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Green%20Peas",
+        "image_url": "https://images.unsplash.com/photo-1567306301408-9b74779a11af",
     },
     {
         "name": "French Beans — 500 g pack",
@@ -405,7 +410,7 @@ PRODUCTS = [
         "description": "French Beans, sold as 500 g pack for everyday cooking and meals.",
         "price": Decimal("50.00"),
         "available_quantity": 20,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=French%20Beans",
+        "image_url": "https://images.unsplash.com/photo-1567306301408-9b74779a11af?auto=format&fit=crop&w=640&q=80",
     },
     {
         "name": "Okra — 500 g pack",
@@ -414,7 +419,7 @@ PRODUCTS = [
         "description": "Okra, sold as 500 g pack for everyday cooking and meals.",
         "price": Decimal("40.00"),
         "available_quantity": 25,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Okra",
+        "image_url": "https://images.unsplash.com/photo-1596450523098-32d7f5ea8e2a",
     },
     {
         "name": "Brinjal — 500 g pack",
@@ -423,7 +428,7 @@ PRODUCTS = [
         "description": "Brinjal, sold as 500 g pack for everyday cooking and meals.",
         "price": Decimal("35.00"),
         "available_quantity": 19,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Brinjal",
+        "image_url": "https://images.unsplash.com/photo-1603046919556-804c483c3e02",
     },
     {
         "name": "Bottle Gourd — 1 piece",
@@ -432,7 +437,7 @@ PRODUCTS = [
         "description": "Bottle Gourd, sold as 1 piece for everyday cooking and meals.",
         "price": Decimal("45.00"),
         "available_quantity": 11,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Bottle%20Gourd",
+        "image_url": "https://images.unsplash.com/photo-1596450523098-32d7f5ea8e2a?auto=format&fit=crop&w=640&q=80",
     },
     {
         "name": "Bitter Gourd — 500 g pack",
@@ -441,7 +446,7 @@ PRODUCTS = [
         "description": "Bitter Gourd, sold as 500 g pack for everyday cooking and meals.",
         "price": Decimal("40.00"),
         "available_quantity": 13,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Bitter%20Gourd",
+        "image_url": "https://images.unsplash.com/photo-1596450523098-32d7f5ea8e2a?auto=format&fit=crop&w=640&q=80",
     },
     {
         "name": "Cucumber — 500 g pack",
@@ -450,7 +455,7 @@ PRODUCTS = [
         "description": "Cucumber, sold as 500 g pack for everyday cooking and meals.",
         "price": Decimal("30.00"),
         "available_quantity": 28,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Cucumber",
+        "image_url": "https://images.unsplash.com/photo-1449300079323-02e209d9d3a6",
     },
     {
         "name": "Green Capsicum — 500 g pack",
@@ -459,7 +464,7 @@ PRODUCTS = [
         "description": "Green Capsicum, sold as 500 g pack for everyday cooking and meals.",
         "price": Decimal("55.00"),
         "available_quantity": 17,
-        "image_url": "https://placehold.co/640x480/f5f7ef/27633c?text=Green%20Capsicum",
+        "image_url": "https://images.unsplash.com/photo-1563565375-f3fdf5dbc240",
     },
 ]
 
