@@ -2,6 +2,8 @@ import logging
 import re
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from time import time
+import time
 from typing import Annotated
 from uuid import uuid4
 
@@ -54,14 +56,18 @@ async def request_log(request: Request, call_next):
         else str(uuid4())
     )
     request.state.request_id = request_id
+    start = time.perf_counter()
     response = await call_next(request)
+    duration_ms = (time.perf_counter() - start) * 1000
     response.headers["X-Request-ID"] = request_id
+    response.headers["X-Process-Time"] = f"{duration_ms:.2f}"
     logger.info(
-        "request id=%s method=%s path=%s status=%s",
+        "request id=%s method=%s path=%s status=%s duration_ms=%.2f",
         request_id,
         request.method,
         request.url.path,
         response.status_code,
+        duration_ms,
     )
     return response
 

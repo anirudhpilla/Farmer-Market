@@ -29,7 +29,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // Wait for refresh to finish: user is temporarily null during admin restoration.
     if (authLoading || user) return;
     let active = true;
 
@@ -54,7 +53,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [authLoading, user]);
 
   const addItem = useCallback(async (productId: number, quantity: number) => {
-    // Admins can still shop deliberately; create/reuse a guest session only then.
     if (user) await ensureGuestSession();
     setCart(await addCartItem(productId, quantity));
   }, [user]);
@@ -85,8 +83,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Kept with the small provider to avoid creating another one-function file.
-// eslint-disable-next-line react-refresh/only-export-components
 export function useCart() {
   const context = useContext(CartContext);
   if (!context) throw new Error("useCart must be used inside CartProvider");
