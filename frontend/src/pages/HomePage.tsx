@@ -21,6 +21,7 @@ export function HomePage() {
     search: debouncedSearch || undefined, categoryId, page, pageSize: PAGE_SIZE,
   });
 
+  // Keep URL-controlled inputs immediate; apply the catalog query at lower priority.
   useEffect(() => {
     startTransition(() => {
       setFilters({ search: debouncedSearch || undefined, categoryId, page, pageSize: PAGE_SIZE });
@@ -44,8 +45,10 @@ export function HomePage() {
     queryKey: ["products", filters],
     queryFn: ({ signal }) => getProducts(filters, signal),
     staleTime: PRODUCT_STALE_TIME,
+    refetchInterval: 15_000,
     placeholderData: keepPreviousData,
   });
+  // A transition tracks React rendering, not the HTTP request or debounce timer.
   const updating = isTransitionPending || isFetching ||
     search.trim() !== (filters.search ?? "") || categoryId !== filters.categoryId || page !== filters.page;
 

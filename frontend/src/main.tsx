@@ -15,6 +15,8 @@ import { GuestOrdersPage } from "./pages/GuestOrdersPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { OrderConfirmationPage } from "./pages/OrderConfirmationPage";
 import { ProductDetailsPage } from "./pages/ProductDetailsPage";
+import { WishlistPage } from "./pages/WishlistPage";
+import { WishlistProvider } from "./wishlist";
 import "./styles.css";
 
 const AdminPage = lazy(() => import("./pages/AdminPage").then((module) => ({ default: module.AdminPage })));
@@ -32,6 +34,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: "products/:productId", element: <ProductDetailsPage /> },
+      { path: "wishlist", element: <WishlistPage /> },
       { path: "cart", element: <CartPage /> },
       { path: "checkout", element: <CheckoutPage /> },
       { path: "orders", element: <GuestOrdersPage /> },
@@ -63,7 +66,9 @@ createRoot(rootElement).render(
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <CartProvider>
-          <RouterProvider router={router} />
+          <WishlistProvider>
+            <RouterProvider router={router} />
+          </WishlistProvider>
         </CartProvider>
       </AuthProvider>
     </QueryClientProvider>

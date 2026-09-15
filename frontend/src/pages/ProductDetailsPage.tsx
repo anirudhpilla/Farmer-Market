@@ -5,13 +5,12 @@ import { getApiError, getProduct } from "../api";
 import { useQuery } from "@tanstack/react-query";
 import { PRODUCT_STALE_TIME } from "../queryClient";
 import { useCart } from "../cart";
-import { useAuth } from "../auth";
 import { ProductImage } from "../components/ProductImage";
+import { WishlistButton } from "../components/WishlistButton";
 import { formatPrice } from "../currency";
 
 export function ProductDetailsPage() {
   const { addItem, ready: cartReady } = useCart();
-  const { user } = useAuth();
   const productId = Number(useParams().productId);
   const validId = Number.isInteger(productId) && productId > 0;
   const { data: product, isPending, isError } = useQuery({
@@ -19,6 +18,7 @@ export function ProductDetailsPage() {
     queryFn: ({ signal }) => getProduct(productId, signal),
     enabled: validId,
     staleTime: PRODUCT_STALE_TIME,
+    refetchInterval: 15_000,
   });
   const [quantity, setQuantity] = useState("1");
   const [adding, setAdding] = useState(false);
@@ -67,11 +67,17 @@ export function ProductDetailsPage() {
         <h1>{product.name}</h1>
         <p className="farmer-name">Grown by {product.farmer_name}</p>
         <p className="product-description">{product.description}</p>
+        {product.regular_price && Number(product.regular_price) > Number(product.price) && (
+          <del className="regular-price">{formatPrice(product.regular_price)}</del>
+        )}
         <strong className="price price--large">{formatPrice(product.price)}</strong>
         <span className={inStock ? "stock stock--available" : "stock stock--empty"}>
           {inStock ? `${product.available_quantity} available` : "Currently out of stock"}
         </span>
-        {!user && (<div className="add-to-cart">
+        <div className="product-details__wishlist">
+          <WishlistButton productId={product.id} />
+        </div>
+        <div className="add-to-cart">
           <label>
             <span>Quantity</span>
             <input
@@ -95,7 +101,7 @@ export function ProductDetailsPage() {
           >
             {adding ? "Adding…" : "Add to cart"}
           </button>
-        </div>)}
+        </div>
         {cartMessage && <p className="cart-success" role="status">{cartMessage}</p>}
         {cartError && <p className="form-error" role="alert">{cartError}</p>}
       </div>

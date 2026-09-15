@@ -211,10 +211,56 @@ a:focus-visible {
 }
 
 .product-card {
+  position: relative;
   overflow: hidden;
   border: 1px solid #d7ded3;
   border-radius: 10px;
   background: #fff;
+}
+
+.product-card__main {
+  display: block;
+  height: 100%;
+  color: inherit;
+  text-decoration: none;
+}
+
+.product-card__wishlist {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+}
+
+.wishlist-button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #aebcad;
+  border-radius: 999px;
+  color: #24442e;
+  background: rgba(255, 255, 255, 0.94);
+  font: inherit;
+  cursor: pointer;
+}
+
+.wishlist-button--saved {
+  color: #8a2e3b;
+  border-color: #d6a8ae;
+}
+
+.wishlist-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.product-details__wishlist {
+  margin-block: 1rem;
+}
+
+.wishlist-page > h1 {
+  margin-bottom: 1.25rem;
 }
 
 .product-card__image {
@@ -1002,11 +1048,9 @@ select option {
   text-underline-offset: 0.45rem;
 }
 
-/* ProductCard is a link, so keep the card appearance instead of link styling. */
+/* The main card content is a link; the wishlist button remains a separate control. */
 .product-card {
-  display: block;
   color: inherit;
-  text-decoration: none;
 }
 
 .product-card:hover {
@@ -1036,3 +1080,9 @@ select option {
 .footer-admin button:disabled {
   cursor: wait;
 }
+
+
+.discount-section { margin-top: 2rem; }
+.discount-section > p { line-height: 1.5; }
+.discount-section .product-form__actions { gap: 1rem; flex-wrap: wrap; }
+.regular-price { display: block; color: #59645c; font-size: 0.9rem; }

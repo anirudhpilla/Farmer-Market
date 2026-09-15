@@ -16,6 +16,7 @@ def test_core_tables_are_registered() -> None:
         "refresh_sessions",
         "refresh_tokens",
         "users",
+        "wishlist_items",
     }
 
     assert expected_tables == set(Base.metadata.tables)

@@ -8,7 +8,8 @@ import {
   getApiError,
   getCategories,
 } from "../api";
-import type { Category, ProductInput } from "../api";
+import { ProductDiscountForm } from "../components/ProductDiscountForm";
+import type { AdminProduct, Category, ProductInput } from "../api";
 
 const emptyForm = {
   name: "",
@@ -28,6 +29,7 @@ export function AdminProductFormPage() {
   const validId = Number.isInteger(numericId) && numericId > 0;
   const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
+  const [product, setProduct] = useState<AdminProduct | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -44,13 +46,14 @@ export function AdminProductFormPage() {
     Promise.all([getCategories(controller.signal), productRequest])
       .then(([categoryList, product]) => {
         setCategories(categoryList);
+        setProduct(product);
         if (product) {
           setForm({
             name: product.name,
             categoryId: String(product.category.id),
             farmerName: product.farmer_name,
             description: product.description,
-            price: product.price,
+            price: product.regular_price ?? product.price,
             availableQuantity: String(product.available_quantity),
             imageUrl: product.image_url,
             status: product.status,
@@ -160,7 +163,7 @@ export function AdminProductFormPage() {
           />
         </label>
         <label>
-          <span>Price (INR) *</span>
+          <span>Regular price (INR) *</span>
           <input
             type="number"
             min="0.01"
@@ -223,6 +226,9 @@ export function AdminProductFormPage() {
           </button>
         </div>
       </form>
+      {product ? <ProductDiscountForm key={product.id} product={product} /> : (
+        <p>Create the product first, then open Edit to schedule a discount.</p>
+      )}
     </section>
   );
 }

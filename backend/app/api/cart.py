@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Annotated
 
@@ -7,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.guest import check_guest_csrf, check_guest_origin, find_guest
 from app.database import get_db_session
+from app.discounts import current_price
 from app.models import Cart, CartItem, CartState, Product, ProductStatus
 from app.schemas import CartItemCreate, CartItemRead, CartItemUpdate, CartRead
 
@@ -43,14 +45,16 @@ async def read_cart(session: AsyncSession, cart: Cart | None) -> CartRead:
     items = []
     grand_total = Decimal("0.00")
 
+    now = datetime.now(UTC)
     for cart_item, product in rows:
+        price = current_price(product, now)
         issue = None
         if product.is_deleted or product.status != ProductStatus.ACTIVE:
             issue = "unavailable"
         elif cart_item.quantity > product.available_quantity:
             issue = "insufficient_stock"
 
-        line_total = product.price * cart_item.quantity
+        line_total = price * cart_item.quantity
         grand_total += line_total
         items.append(
             CartItemRead(
@@ -58,7 +62,7 @@ async def read_cart(session: AsyncSession, cart: Cart | None) -> CartRead:
                 product_id=product.id,
                 name=product.name,
                 image_url=product.image_url,
-                unit_price=product.price,
+                unit_price=price,
                 quantity=cart_item.quantity,
                 line_total=line_total,
                 available_quantity=product.available_quantity,

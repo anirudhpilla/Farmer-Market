@@ -1,8 +1,10 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Literal
 
 from pydantic import (
+    AliasChoices,
+    AwareDatetime,
     BaseModel,
     ConfigDict,
     EmailStr,
@@ -48,7 +50,11 @@ class ProductRead(BaseModel):
     category: CategoryRead
     farmer_name: str
     description: str
-    price: Decimal
+    price: Decimal = Field(validation_alias=AliasChoices("selling_price", "price"))
+    regular_price: Decimal | None = None
+    discount_percent: Decimal | None = None
+    discount_starts_at: datetime | None = None
+    discount_ends_at: datetime | None = None
     available_quantity: int
     image_url: str
 
@@ -63,6 +69,11 @@ class ProductPage(BaseModel):
     page_size: int = Field(ge=1)
     total: int = Field(ge=0)
     total_pages: int = Field(ge=0)
+
+
+class WishlistRead(BaseModel):
+    items: list[ProductRead]
+    item_count: int = Field(ge=0)
 
 
 class AdminProductRead(ProductRead):
@@ -231,3 +242,19 @@ class OrderPage(BaseModel):
     page_size: int
     total: int
     total_pages: int
+
+
+class DiscountSchedule(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    percent: Decimal = Field(gt=0, lt=100, max_digits=5, decimal_places=2)
+    starts_at: AwareDatetime
+    ends_at: AwareDatetime
+
+    @model_validator(mode="after")
+    def check_dates(self):
+        if self.ends_at <= self.starts_at:
+            raise ValueError("End time must be after start time")
+        if self.ends_at <= datetime.now(UTC):
+            raise ValueError("End time must be in the future")
+        return self

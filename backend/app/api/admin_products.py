@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from math import ceil
 from typing import Annotated
 
@@ -9,10 +10,12 @@ from sqlalchemy.orm import joinedload
 from app.api.auth import get_current_admin
 from app.api.catalog import escape_like_term
 from app.database import get_db_session
+from app.discounts import current_price
 from app.models import Category, Product, ProductStatus, User
 from app.schemas import (
     AdminProductPage,
     AdminProductRead,
+    DiscountSchedule,
     ProductCreate,
     ProductStatusUpdate,
     ProductStockUpdate,
@@ -130,7 +133,7 @@ async def update_product(
     session: DatabaseSession,
     _admin: CurrentAdmin,
 ) -> Product:
-    product = await find_product(session, product_id)
+    product = await find_product(session, product_id, lock=True)
     changes = body.model_dump(exclude_unset=True)
 
     if "category_id" in changes:
@@ -139,6 +142,10 @@ async def update_product(
 
     if "image_url" in changes:
         changes["image_url"] = str(changes["image_url"])
+
+    if "price" in changes and product.regular_price is not None:
+        product.regular_price = changes.pop("price")
+        product.price = current_price(product)
 
     for field, value in changes.items():
         setattr(product, field, value)
@@ -155,7 +162,7 @@ async def update_product_status(
     session: DatabaseSession,
     _admin: CurrentAdmin,
 ) -> Product:
-    product = await find_product(session, product_id)
+    product = await find_product(session, product_id, lock=True)
     product.status = ProductStatus(body.status)
     product.version += 1
     await session.commit()
@@ -192,3 +199,36 @@ async def delete_product(
     product.is_deleted = True
     product.version += 1
     await session.commit()
+
+
+@router.put("/{product_id}/discount", response_model=AdminProductRead)
+async def schedule_discount(
+    product_id: int, body: DiscountSchedule, session: DatabaseSession, _admin: CurrentAdmin,
+) -> Product:
+    product = await find_product(session, product_id, lock=True)
+    # Replacing a schedule must never compound the previous discount.
+    if product.regular_price is None:
+        product.regular_price = product.price
+    product.discount_percent = body.percent
+    product.discount_starts_at = body.starts_at
+    product.discount_ends_at = body.ends_at
+    product.price = current_price(product, datetime.now(UTC))
+    product.version += 1
+    await session.commit()
+    return product
+
+
+@router.delete("/{product_id}/discount", response_model=AdminProductRead)
+async def cancel_discount(
+    product_id: int, session: DatabaseSession, _admin: CurrentAdmin,
+) -> Product:
+    product = await find_product(session, product_id, lock=True)
+    if product.regular_price is not None:
+        product.price = product.regular_price
+        product.regular_price = None
+        product.discount_percent = None
+        product.discount_starts_at = None
+        product.discount_ends_at = None
+        product.version += 1
+    await session.commit()
+    return product

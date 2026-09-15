@@ -95,6 +95,28 @@ class GuestSession(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class WishlistItem(Base):
+    __tablename__ = "wishlist_items"
+    __table_args__ = (
+        UniqueConstraint(
+            "guest_session_id",
+            "product_id",
+            name="uq_wishlist_items_guest_product",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    guest_session_id: Mapped[int] = mapped_column(
+        ForeignKey("guest_sessions.id", ondelete="CASCADE"), index=True
+    )
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+
 class Cart(Base):
     __tablename__ = "carts"
     __table_args__ = (
@@ -218,6 +240,17 @@ class Product(Base):
     farmer_name: Mapped[str] = mapped_column(String(160))
     description: Mapped[str] = mapped_column(Text)
     price: Mapped[Decimal] = mapped_column(Numeric(12, 2))
+    regular_price: Mapped[Decimal | None] = mapped_column(Numeric(12, 2))
+    discount_percent: Mapped[Decimal | None] = mapped_column(Numeric(5, 2))
+    discount_starts_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    discount_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    @property
+    def selling_price(self) -> Decimal:
+        from app.discounts import current_price
+
+        return current_price(self)
+
     available_quantity: Mapped[int]
     image_url: Mapped[str] = mapped_column(String(2048))
     status: Mapped[ProductStatus] = mapped_column(

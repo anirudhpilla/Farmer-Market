@@ -14,6 +14,10 @@ export type Product = {
   farmer_name: string;
   description: string;
   price: string;
+  regular_price: string | null;
+  discount_percent: string | null;
+  discount_starts_at: string | null;
+  discount_ends_at: string | null;
   available_quantity: number;
   image_url: string;
 };
@@ -24,6 +28,11 @@ export type ProductPage = {
   page_size: number;
   total: number;
   total_pages: number;
+};
+
+export type Wishlist = {
+  items: Product[];
+  item_count: number;
 };
 
 export type AdminProduct = Product & {
@@ -369,6 +378,25 @@ export async function removeCartItem(itemId: number): Promise<Cart> {
   return response.data;
 }
 
+export async function getWishlist(signal?: AbortSignal): Promise<Wishlist> {
+  const response = await api.get<Wishlist>("/wishlist", { signal });
+  return response.data;
+}
+
+export async function addWishlistItem(productId: number): Promise<Wishlist> {
+  const response = await api.post<Wishlist>(`/wishlist/${productId}`, null, {
+    headers: guestCsrfHeader(),
+  });
+  return response.data;
+}
+
+export async function removeWishlistItem(productId: number): Promise<Wishlist> {
+  const response = await api.delete<Wishlist>(`/wishlist/${productId}`, {
+    headers: guestCsrfHeader(),
+  });
+  return response.data;
+}
+
 export async function checkoutCart(cart: Cart, idempotencyKey: string): Promise<Order> {
   const response = await api.post<Order>(
     "/orders/checkout",
@@ -409,5 +437,21 @@ export async function getAdminOrders(page: number, signal?: AbortSignal): Promis
 
 export async function getAdminOrder(orderId: number, signal?: AbortSignal): Promise<Order> {
   const response = await api.get<Order>(`/admin/orders/${orderId}`, { signal });
+  return response.data;
+}
+
+
+export async function scheduleProductDiscount(
+  productId: number,
+  body: { percent: string; starts_at: string; ends_at: string },
+): Promise<AdminProduct> {
+  const response = await api.put<AdminProduct>(`/admin/products/${productId}/discount`, body);
+  invalidateProducts();
+  return response.data;
+}
+
+export async function cancelProductDiscount(productId: number): Promise<AdminProduct> {
+  const response = await api.delete<AdminProduct>(`/admin/products/${productId}/discount`);
+  invalidateProducts();
   return response.data;
 }

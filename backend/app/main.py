@@ -1,9 +1,8 @@
+import asyncio
 import logging
 import re
 from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
-from time import time
-import time
+from contextlib import asynccontextmanager, suppress
 from typing import Annotated
 from uuid import uuid4
 
@@ -19,8 +18,10 @@ from app.api.cart import router as cart_router
 from app.api.catalog import router as catalog_router
 from app.api.guest import router as guest_router
 from app.api.orders import router as orders_router
+from app.api.wishlist import router as wishlist_router
 from app.config import get_settings
 from app.database import engine, get_db_session
+from app.discounts import run_discount_scheduler
 
 settings = get_settings()
 logger = logging.getLogger("farmer_market.requests")
@@ -28,8 +29,14 @@ logger = logging.getLogger("farmer_market.requests")
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncGenerator[None, None]:
-    yield
-    await engine.dispose()
+    task = asyncio.create_task(run_discount_scheduler())
+    try:
+        yield
+    finally:
+        task.cancel()
+        with suppress(asyncio.CancelledError):
+            await task
+        await engine.dispose()
 
 
 app = FastAPI(
@@ -56,18 +63,14 @@ async def request_log(request: Request, call_next):
         else str(uuid4())
     )
     request.state.request_id = request_id
-    start = time.perf_counter()
     response = await call_next(request)
-    duration_ms = (time.perf_counter() - start) * 1000
     response.headers["X-Request-ID"] = request_id
-    response.headers["X-Process-Time"] = f"{duration_ms:.2f}"
     logger.info(
-        "request id=%s method=%s path=%s status=%s duration_ms=%.2f",
+        "request id=%s method=%s path=%s status=%s",
         request_id,
         request.method,
         request.url.path,
         response.status_code,
-        duration_ms,
     )
     return response
 
@@ -92,12 +95,13 @@ async def unexpected_error(request: Request, error: Exception) -> JSONResponse:
     )
 
 
+app.include_router(catalog_router, prefix=settings.api_v1_prefix)
 app.include_router(auth_router, prefix=settings.api_v1_prefix)
 app.include_router(admin_products_router, prefix=settings.api_v1_prefix)
-app.include_router(catalog_router, prefix=settings.api_v1_prefix)
 app.include_router(guest_router, prefix=settings.api_v1_prefix)
 app.include_router(cart_router, prefix=settings.api_v1_prefix)
 app.include_router(orders_router, prefix=settings.api_v1_prefix)
+app.include_router(wishlist_router, prefix=settings.api_v1_prefix)
 
 
 @app.get(f"{settings.api_v1_prefix}/health", tags=["health"])

@@ -1,5 +1,6 @@
 import hashlib
 import json
+from datetime import UTC, datetime
 from decimal import Decimal
 from math import ceil
 from typing import Annotated
@@ -23,6 +24,7 @@ from app.api.auth import get_current_admin
 from app.api.cart import find_open_cart
 from app.api.guest import check_guest_csrf, check_guest_origin, find_guest
 from app.database import get_db_session
+from app.discounts import current_price
 from app.models import (
     CartItem,
     CartState,
@@ -167,6 +169,9 @@ async def checkout(
     if [product.id for product in products] != product_ids:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A product is unavailable")
 
+    now = datetime.now(UTC)
+    prices = {product.id: current_price(product, now) for product in products}
+
     for product in products:
         quantity = actual_quantities[product.id]
         if product.is_deleted or product.status != ProductStatus.ACTIVE:
@@ -179,14 +184,14 @@ async def checkout(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Only {product.available_quantity} units of {product.name} remain",
             )
-        if product.price != expected[product.id].unit_price:
+        if prices[product.id] != expected[product.id].unit_price:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"The price of {product.name} changed; review the cart again",
             )
 
     grand_total = sum(
-        (product.price * actual_quantities[product.id] for product in products),
+        (prices[product.id] * actual_quantities[product.id] for product in products),
         start=Decimal("0.00"),
     )
     order = Order(
@@ -206,7 +211,7 @@ async def checkout(
             OrderItem(
                 product_id=product.id,
                 product_name_snapshot=product.name,
-                unit_price_snapshot=product.price,
+                unit_price_snapshot=prices[product.id],
                 quantity=quantity,
             )
         )
